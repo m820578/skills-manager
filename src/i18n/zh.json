@@ -73,6 +73,7 @@
     "all": "全部",
     "searchMarket": "搜索 skills.sh 市场...",
     "oneClickInstall": "一键安装",
+    "viewOnWeb": "在 skills.sh 查看",
     "installing": "安装中...",
     "dragDrop": "拖拽 Skills 文件夹到此处",
     "dragDropDesc": "支持包含 SKILL.md 的文件夹、.zip 压缩包或单体 .skill 文件。",

@@ -14,6 +14,7 @@ import {
   FolderSearch,
   ChevronDown,
   ChevronRight,
+  ExternalLink,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
@@ -22,6 +23,7 @@ import { useApp } from "../context/AppContext";
 import * as api from "../lib/tauri";
 import type { ScanResult, SkillsShSkill } from "../lib/tauri";
 import { open } from "@tauri-apps/plugin-dialog";
+import { openUrl } from "@tauri-apps/plugin-opener";
 import { useSearchParams } from "react-router-dom";
 
 export function InstallSkills() {
@@ -244,35 +246,41 @@ export function InstallSkills() {
               {marketSkills.map((skill) => (
                 <div
                   key={skill.id}
-                  className="bg-surface border border-border-subtle rounded-lg p-3.5 hover:border-border transition-colors flex flex-col"
+                  className="bg-surface border border-border-subtle rounded-lg p-3.5 hover:border-border transition-colors flex items-center gap-3"
                 >
-                  <div className="flex justify-between items-start mb-1.5">
+                  <div className="min-w-0 flex-1">
                     <h3 className="font-semibold text-secondary text-[13px] truncate">{skill.name || skill.skill_id}</h3>
+                    <div className="flex items-center gap-2 mt-1">
+                      <span className="text-[10px] text-accent-light font-medium bg-accent-bg px-1.5 py-0.5 rounded">
+                        @{skill.source}
+                      </span>
+                      <span className="text-[10px] text-muted flex items-center gap-1">
+                        <DownloadCloud className="w-3 h-3" />
+                        {skill.installs > 1000
+                          ? `${(skill.installs / 1000).toFixed(0)}k`
+                          : skill.installs}
+                      </span>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="text-[10px] text-accent-light font-medium bg-accent-bg px-1.5 py-0.5 rounded">
-                      @{skill.source}
-                    </span>
-                    <span className="text-[10px] text-muted flex items-center gap-1">
-                      <DownloadCloud className="w-3 h-3" />
-                      {skill.installs > 1000
-                        ? `${(skill.installs / 1000).toFixed(0)}k`
-                        : skill.installs}
-                    </span>
-                  </div>
-                  <p className="text-[11px] text-muted line-clamp-2 mb-auto">{skill.skill_id}</p>
-                  <div className="pt-2.5 flex justify-end">
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <button
+                      onClick={() => openUrl(`https://skills.sh/${skill.source}/${skill.skill_id}`)}
+                      className="p-1.5 rounded-[4px] text-muted hover:text-secondary hover:bg-surface-hover transition-colors"
+                      title={t("install.viewOnWeb")}
+                    >
+                      <ExternalLink className="w-3.5 h-3.5" />
+                    </button>
                     <button
                       onClick={() => handleInstallSkillssh(skill)}
                       disabled={installing === skill.id}
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-[4px] bg-accent-dark hover:bg-accent text-white text-[11px] font-medium transition-colors w-full justify-center disabled:opacity-50 border border-accent-border"
+                      className="p-1.5 rounded-[4px] bg-accent-dark hover:bg-accent text-white transition-colors disabled:opacity-50 border border-accent-border"
+                      title={t("install.oneClickInstall")}
                     >
                       {installing === skill.id ? (
-                        <Loader2 className="w-3 h-3 animate-spin" />
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
                       ) : (
-                        <Plus className="w-3 h-3" />
+                        <Plus className="w-3.5 h-3.5" />
                       )}
-                      {installing === skill.id ? t("install.installing") : t("install.oneClickInstall")}
                     </button>
                   </div>
                 </div>

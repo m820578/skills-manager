@@ -73,6 +73,7 @@
     "all": "All Time",
     "searchMarket": "Search skills.sh market...",
     "oneClickInstall": "Install",
+    "viewOnWeb": "View on skills.sh",
     "installing": "Installing...",
     "dragDrop": "Drag & Drop Skills Folder Here",
     "dragDropDesc": "Supports folders with SKILL.md, .zip archives, or .skill files.",
