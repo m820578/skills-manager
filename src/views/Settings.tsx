@@ -93,7 +93,8 @@ export function Settings() {
     }
   };
 
-  const selectClass = "bg-background border border-border-subtle rounded-[4px] px-3 py-1.5 text-[12px] text-secondary focus:outline-none focus:border-border transition-colors";
+  const selectClass =
+    "h-10 rounded-lg border border-border-subtle bg-background px-3 text-[12px] text-secondary outline-none transition-colors focus:border-border";
 
   const themeOptions: Array<{ value: Theme; label: string; icon: typeof Sun }> = [
     { value: "light", label: t("settings.themeLight"), icon: Sun },
@@ -102,10 +103,9 @@ export function Settings() {
   ];
 
   return (
-    <div className="max-w-[1000px] mx-auto h-full flex flex-col animate-in fade-in duration-400 pb-8">
-      {/* Header */}
-      <div className="mb-5 pb-4 border-b border-border-subtle">
-        <h1 className="text-[15px] font-semibold text-primary flex items-center gap-2">
+    <div className="app-page app-page-narrow">
+      <div className="app-page-header">
+        <h1 className="app-page-title flex items-center gap-2">
           <Settings2 className="w-4 h-4 text-accent" />
           {t("settings.title")}
         </h1>
@@ -115,7 +115,7 @@ export function Settings() {
         {/* Agent status */}
         <section>
           <div className="flex items-center justify-between mb-3">
-            <h2 className="text-[11px] font-semibold text-muted uppercase tracking-[0.08em]">
+            <h2 className="app-section-title">
               {t("settings.supportedAgents")} ({tools.filter((t) => t.installed).length}/{tools.length})
             </h2>
             <button
@@ -162,10 +162,10 @@ export function Settings() {
 
         {/* Global config */}
         <section>
-          <h2 className="text-[11px] font-semibold text-muted uppercase tracking-[0.08em] mb-3">
+          <h2 className="app-section-title mb-3">
             {t("settings.globalConfig")}
           </h2>
-          <div className="bg-surface border border-border-subtle rounded-lg overflow-hidden divide-y divide-border-subtle">
+          <div className="app-panel overflow-hidden divide-y divide-border-subtle">
             {/* Repo path */}
             <div className="px-4 py-3 flex items-center justify-between gap-4">
               <div className="min-w-0">
@@ -309,7 +309,7 @@ export function Settings() {
 
         {/* About */}
         <section>
-          <div className="bg-surface border border-border-subtle rounded-lg p-4 flex items-center justify-between">
+          <div className="app-panel p-4 flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 rounded-lg bg-surface-hover border border-border flex items-center justify-center">
                 <Settings2 className="w-4 h-4 text-accent" />

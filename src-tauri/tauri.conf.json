@@ -13,9 +13,9 @@
     "windows": [
       {
         "title": "Skills Manager",
-        "width": 960,
+        "width": 1200,
         "height": 640,
-        "minWidth": 800,
+        "minWidth": 960,
         "minHeight": 500,
         "resizable": true,
         "fullscreen": false,

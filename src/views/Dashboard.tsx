@@ -26,16 +26,13 @@ export function Dashboard() {
   }, [activeScenario]);
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-400 pb-8">
-      {/* Header */}
-      <div>
-        <h1 className="text-[16px] font-semibold text-primary mb-1.5">
-          {t("dashboard.greeting")}
-        </h1>
-        <p className="text-[13px] text-tertiary flex items-center gap-2 flex-wrap">
+    <div className="app-page app-page-narrow">
+      <div className="app-page-header">
+        <h1 className="app-page-title">{t("dashboard.greeting")}</h1>
+        <p className="app-page-subtitle flex items-center gap-2 flex-wrap text-tertiary">
           {t("dashboard.currentScenario")}：
           <span
-            className={`inline-flex items-center gap-1.5 rounded border px-2 py-0.5 text-[12px] font-medium ${scenarioIcon.activeClass} ${scenarioIcon.colorClass}`}
+            className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-medium ${scenarioIcon.activeClass} ${scenarioIcon.colorClass}`}
           >
             <ScenarioIcon className="h-3 w-3" />
             {activeScenario?.name || "—"}
@@ -74,10 +71,10 @@ export function Dashboard() {
           return (
             <div
               key={i}
-              className="flex items-center justify-between px-4 py-3.5 rounded-lg bg-surface border border-border-subtle hover:border-border transition-colors"
+              className="app-panel flex items-center justify-between px-4 py-4 transition-colors hover:border-border"
             >
               <div>
-                <p className="text-[11px] font-semibold text-muted uppercase tracking-[0.08em] mb-1">
+                <p className="app-section-title mb-1">
                   {stat.title}
                 </p>
                 <h3 className="text-xl font-semibold text-primary leading-none">{stat.value}</h3>
@@ -94,14 +91,14 @@ export function Dashboard() {
       <div className="flex gap-3">
         <button
           onClick={() => navigate("/install?tab=local")}
-          className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg bg-accent-dark hover:bg-accent text-white text-[13px] font-medium transition-colors outline-none"
+          className="app-button-primary flex-1"
         >
           <Download className="w-4 h-4" />
           {t("dashboard.scanImport")}
         </button>
         <button
           onClick={() => navigate("/install")}
-          className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg bg-surface-hover hover:bg-surface-active text-secondary text-[13px] font-medium transition-colors border border-border outline-none"
+          className="app-button-secondary flex-1"
         >
           <Plus className="w-4 h-4 text-tertiary" />
           {t("dashboard.installNew")}
@@ -111,10 +108,10 @@ export function Dashboard() {
       {/* Recent skills */}
       {skills.length > 0 && (
         <div>
-          <h2 className="text-[11px] font-semibold text-muted uppercase tracking-[0.08em] mb-2.5">
+          <h2 className="app-section-title mb-2.5">
             {t("dashboard.recentActivity")}
           </h2>
-          <div className="bg-surface border border-border-subtle rounded-lg overflow-hidden divide-y divide-border-subtle">
+          <div className="app-panel overflow-hidden divide-y divide-border-subtle">
             {skills.slice(0, 5).map((skill) => (
               <div
                 key={skill.id}

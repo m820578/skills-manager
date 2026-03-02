@@ -267,44 +267,42 @@ export function MySkills() {
   };
 
   return (
-    <div className="mx-auto flex h-full max-w-[1200px] flex-col animate-in fade-in duration-400">
-      <div className="mb-5 pr-2">
-        <h1 className="flex items-center gap-2.5 text-[16px] font-semibold text-primary">
+    <div className="app-page">
+      <div className="app-page-header pr-2">
+        <h1 className="app-page-title flex items-center gap-2.5">
           {t("mySkills.title")}
-          <span className="rounded-full border border-border bg-surface-hover px-2.5 py-0.5 text-[12px] font-medium text-tertiary">
+          <span className="app-badge">
             {skills.length}
           </span>
         </h1>
-        <p className="mt-1.5 text-[13px] text-muted">
+        <p className="app-page-subtitle">
           {activeScenario
             ? t("mySkills.subtitle", { scenario: activeScenario.name, count: enabledCount })
             : t("mySkills.noScenario")}
         </p>
       </div>
 
-      <div className="mb-5 flex items-center justify-between gap-4">
+      <div className="app-toolbar">
         <div className="flex flex-1 gap-3">
-          <div className="relative max-w-[260px] w-full">
+          <div className="relative w-full max-w-[280px]">
             <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted" />
             <input
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder={t("mySkills.searchPlaceholder")}
-              className="h-[34px] w-full rounded-[5px] border border-border-subtle bg-surface pl-9 pr-3 text-[13px] font-medium text-secondary placeholder-faint transition-all focus:border-border focus:outline-none"
+              className="app-input w-full pl-9 font-medium"
             />
           </div>
 
-          <div className="flex rounded-[5px] border border-border-subtle bg-surface p-0.5">
+          <div className="app-segmented">
             {(["all", "enabled", "available"] as const).map((mode) => (
               <button
                 key={mode}
                 onClick={() => setFilterMode(mode)}
                 className={cn(
-                  "rounded-[4px] px-3 py-1.5 text-[12px] font-medium transition-colors outline-none",
-                  filterMode === mode
-                    ? "bg-surface-active text-secondary"
-                    : "text-muted hover:text-tertiary"
+                  "app-segmented-button",
+                  filterMode === mode && "app-segmented-button-active"
                 )}
               >
                 {t(`mySkills.filters.${mode}`)}
@@ -313,11 +311,11 @@ export function MySkills() {
           </div>
         </div>
 
-        <div className="flex rounded-[5px] border border-border-subtle bg-surface p-0.5">
+        <div className="app-segmented">
           <button
             onClick={handleCheckAllUpdates}
             disabled={checkingAll}
-            className="mr-2 inline-flex items-center gap-1 rounded-[4px] px-3 py-2 text-[12px] font-medium text-muted transition-colors hover:bg-surface-hover hover:text-secondary disabled:opacity-50"
+            className="mr-2 inline-flex items-center gap-1 rounded-md px-3 py-2 text-[12px] font-medium text-muted transition-colors hover:bg-surface-hover hover:text-secondary disabled:opacity-50"
           >
             <RefreshCw className={cn("h-3.5 w-3.5", checkingAll && "animate-spin")} />
             {t("mySkills.updateActions.checkAll")}
@@ -325,7 +323,7 @@ export function MySkills() {
           <button
             onClick={() => setViewMode("grid")}
             className={cn(
-              "rounded-[4px] p-2 transition-colors outline-none",
+              "rounded-md p-2 transition-colors outline-none",
               viewMode === "grid" ? "bg-surface-active text-secondary" : "text-muted hover:text-tertiary"
             )}
           >
@@ -334,7 +332,7 @@ export function MySkills() {
           <button
             onClick={() => setViewMode("list")}
             className={cn(
-              "rounded-[4px] p-2 transition-colors outline-none",
+              "rounded-md p-2 transition-colors outline-none",
               viewMode === "list" ? "bg-surface-active text-secondary" : "text-muted hover:text-tertiary"
             )}
           >
@@ -372,7 +370,7 @@ export function MySkills() {
               return (
                 <div
                   key={skill.id}
-                  className="group relative flex flex-col overflow-hidden rounded-lg border border-border-subtle bg-surface transition-all hover:border-border hover:bg-surface-hover"
+                  className="app-panel group relative flex flex-col overflow-hidden transition-all hover:border-border hover:bg-surface-hover"
                 >
                   <div className="absolute right-3 top-3 flex items-center gap-1 opacity-0 transition-all group-hover:opacity-100">
                     <button
@@ -488,7 +486,7 @@ export function MySkills() {
             return (
               <div
                 key={skill.id}
-                className="group flex items-center gap-3.5 rounded-[5px] border border-transparent bg-surface px-3.5 py-2.5 transition-all hover:border-border hover:bg-surface-hover"
+                className="app-panel group flex items-center gap-3.5 rounded-xl border-transparent px-3.5 py-3 transition-all hover:border-border hover:bg-surface-hover"
               >
                 {isSynced ? (
                   <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-emerald-500" />

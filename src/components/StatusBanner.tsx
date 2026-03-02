@@ -28,9 +28,9 @@ export function StatusBanner({
   return (
     <div
       className={cn(
-        "rounded-2xl border px-4 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]",
+        "rounded-xl border px-4 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]",
         toneClass,
-        compact && "rounded-xl px-3.5 py-3"
+        compact && "px-3.5 py-3"
       )}
     >
       <div className="flex items-start justify-between gap-3">
@@ -39,9 +39,9 @@ export function StatusBanner({
             <AlertTriangle className={cn("h-4 w-4", iconClass)} />
           </div>
           <div className="min-w-0">
-            <p className="text-[12px] font-semibold text-primary">{title}</p>
+            <p className="text-[13px] font-semibold text-primary">{title}</p>
             {description ? (
-              <p className="mt-1 text-[12px] leading-5 text-muted">{description}</p>
+              <p className="mt-1 text-[13px] leading-5 text-muted">{description}</p>
             ) : null}
           </div>
         </div>

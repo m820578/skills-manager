@@ -265,9 +265,9 @@ export function InstallSkills() {
   const isLoadingMoreSearch = hasMarketQuery && marketLoadingMore;
 
   return (
-    <div className="h-full max-w-[1200px] animate-in fade-in duration-400">
-      <div className="mb-5">
-        <h1 className="mb-4 text-[15px] font-semibold text-primary">{t("install.title")}</h1>
+    <div className="app-page">
+      <div className="app-page-header">
+        <h1 className="app-page-title mb-4">{t("install.title")}</h1>
         <div className="flex gap-1 border-b border-border-subtle">
           {[
             { id: "market" as const, label: t("install.browseMarket"), icon: Box },
@@ -297,7 +297,7 @@ export function InstallSkills() {
 
       {activeTab === "market" && (
         <div className="animate-in fade-in duration-300">
-          <div className="mb-3 rounded-lg border border-border-subtle bg-surface p-3">
+          <div className="app-panel mb-3 p-3.5">
             <div className="flex flex-col gap-3">
               <div className="flex flex-col gap-2">
                 <div className="min-w-0">
@@ -319,7 +319,7 @@ export function InstallSkills() {
 
                 <div className="flex flex-col gap-1.5 lg:flex-row lg:items-center">
                   {!hasMarketQuery ? (
-                    <div className="flex shrink-0 rounded-[6px] border border-border-subtle bg-background p-0.5">
+                    <div className="app-segmented shrink-0 bg-background">
                       {[
                         { id: "hot" as const, label: t("install.hot"), icon: Star },
                         { id: "trending" as const, label: t("install.trending"), icon: TrendingUp },
@@ -332,10 +332,8 @@ export function InstallSkills() {
                             key={tab.id}
                             onClick={() => setMarketTab(tab.id)}
                             className={cn(
-                              "flex items-center gap-1.5 rounded-[5px] px-3 py-2 text-[11px] font-medium transition-colors outline-none",
-                              isActive
-                                ? "bg-surface-active text-secondary"
-                                : "text-muted hover:text-tertiary"
+                              "app-segmented-button flex items-center gap-1.5 text-[11px]",
+                              isActive && "app-segmented-button-active"
                             )}
                           >
                             <Icon className="h-3 w-3" />
@@ -356,7 +354,7 @@ export function InstallSkills() {
                         setMarketSearchLimit(MARKET_SEARCH_STEP);
                       }}
                       placeholder={t("install.searchMarket")}
-                      className="h-[38px] w-full rounded-[6px] border border-border-subtle bg-background pl-9 pr-3 text-[13px] text-secondary outline-none transition-colors placeholder:text-faint focus:border-border"
+                      className="app-input w-full bg-background pl-9"
                     />
                   </div>
                 </div>
@@ -425,7 +423,7 @@ export function InstallSkills() {
               <div ref={marketListRef} className="scroll-mt-4" />
 
               {filteredMarketSkills.length === 0 ? (
-                <div className="flex flex-col items-center justify-center rounded-2xl border border-border-subtle bg-surface px-6 py-14 text-center">
+                <div className="app-panel flex flex-col items-center justify-center rounded-2xl px-6 py-14 text-center">
                   <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-border bg-background text-muted">
                     <Search className="h-5 w-5" />
                   </div>
@@ -446,7 +444,7 @@ export function InstallSkills() {
                       return (
                       <div
                         key={skill.id}
-                        className="flex flex-col gap-2 rounded-lg border border-border-subtle bg-surface p-2.5 transition-colors hover:border-border"
+                        className="app-panel flex flex-col gap-2 p-3 transition-colors hover:border-border"
                       >
                         <div className="flex items-start justify-between gap-2">
                           <div className="min-w-0 flex-1">
@@ -569,7 +567,7 @@ export function InstallSkills() {
 
       {activeTab === "local" && (
         <div className="space-y-4 pb-8 animate-in fade-in duration-300">
-          <section className="overflow-hidden rounded-lg border border-border-subtle bg-surface">
+          <section className="app-panel overflow-hidden">
             <div className="border-b border-border-subtle px-4 py-3.5">
               <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                 <div className="max-w-xl">
@@ -592,7 +590,7 @@ export function InstallSkills() {
                   <button
                     type="button"
                     onClick={handleLocalFolderInstall}
-                    className="inline-flex items-center gap-2 rounded-[6px] border border-accent-border bg-accent-dark px-4 py-2 text-[12px] font-medium text-white transition-colors hover:bg-accent"
+                    className="app-button-primary"
                   >
                     <FolderUp className="h-4 w-4" />
                     {t("install.local.selectFolder")}
@@ -600,7 +598,7 @@ export function InstallSkills() {
                   <button
                     type="button"
                     onClick={handleLocalFileInstall}
-                    className="inline-flex items-center gap-2 rounded-[6px] border border-border-subtle bg-background px-4 py-2 text-[12px] font-medium text-secondary transition-colors hover:bg-surface-hover"
+                    className="app-button-secondary bg-background"
                   >
                     <UploadCloud className="h-4 w-4" />
                     {t("install.local.selectArchive")}
@@ -622,7 +620,7 @@ export function InstallSkills() {
             />
           ) : null}
 
-          <section className="overflow-hidden rounded-lg border border-border-subtle bg-surface">
+          <section className="app-panel overflow-hidden">
             <div className="flex items-center justify-between gap-4 border-b border-border-subtle px-4 py-3.5">
               <div>
                 <h2 className="text-[13px] font-semibold text-secondary">{t("install.scan.title")}</h2>
@@ -640,7 +638,7 @@ export function InstallSkills() {
                 <button
                   onClick={runScan}
                   disabled={scanLoading}
-                  className="flex items-center gap-1.5 rounded-[4px] border border-border bg-surface-hover px-3 py-1.5 text-[11px] font-medium text-secondary transition-colors hover:bg-surface-active disabled:opacity-50"
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface-hover px-3 py-2 text-[11px] font-medium text-secondary transition-colors hover:bg-surface-active disabled:opacity-50"
                 >
                   <RefreshCw className={cn("h-3.5 w-3.5", scanLoading && "animate-spin")} />
                   {t("install.scan.rescan")}
@@ -648,7 +646,7 @@ export function InstallSkills() {
                 <button
                   onClick={handleImportAllDiscovered}
                   disabled={scanLoading || importingAll || pendingGroups.length === 0}
-                  className="flex items-center gap-1.5 rounded-[4px] border border-accent-border bg-accent-dark px-3 py-1.5 text-[11px] font-medium text-white transition-colors hover:bg-accent disabled:opacity-50"
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-accent-border bg-accent-dark px-3 py-2 text-[11px] font-medium text-white transition-colors hover:bg-accent disabled:opacity-50"
                 >
                   {importingAll ? (
                     <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -678,7 +676,7 @@ export function InstallSkills() {
                 </div>
               ) : (
                 <>
-                  <div className="overflow-hidden rounded-lg border border-border-subtle bg-bg-secondary">
+                  <div className="app-panel-muted overflow-hidden">
                     {scanGroups.map((group) => {
                       const [primaryLocation, ...otherLocations] = group.locations;
                       const primaryPath = primaryLocation?.found_path;
@@ -762,7 +760,7 @@ export function InstallSkills() {
 
       {activeTab === "git" && (
         <div className="animate-in fade-in duration-300">
-          <div className="max-w-lg rounded-lg border border-border-subtle bg-surface p-5">
+          <div className="app-panel max-w-lg p-5">
             <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-lg border border-border bg-surface-hover">
               <Github className="h-5 w-5 text-tertiary" />
             </div>
@@ -779,7 +777,7 @@ export function InstallSkills() {
                   value={gitUrl}
                   onChange={(e) => setGitUrl(e.target.value)}
                   placeholder={t("install.repoUrlPlaceholder")}
-                  className="w-full rounded-[4px] border border-border-subtle bg-background px-3 py-2 text-[12px] text-secondary transition-all placeholder:text-faint focus:border-border focus:outline-none"
+                  className="app-input w-full bg-background"
                 />
               </div>
               <div>
@@ -794,14 +792,14 @@ export function InstallSkills() {
                   value={gitName}
                   onChange={(e) => setGitName(e.target.value)}
                   placeholder={t("install.customNamePlaceholder")}
-                  className="w-full rounded-[4px] border border-border-subtle bg-background px-3 py-2 text-[12px] text-secondary transition-all placeholder:text-faint focus:border-border focus:outline-none"
+                  className="app-input w-full bg-background"
                 />
               </div>
               <div className="pt-2">
                 <button
                   onClick={handleGitInstall}
                   disabled={!gitUrl.trim() || gitLoading}
-                  className="flex w-full items-center justify-center gap-2 rounded-[4px] border border-accent-border bg-accent-dark px-4 py-2 text-[12px] font-medium text-white transition-colors hover:bg-accent disabled:opacity-50"
+                  className="app-button-primary flex w-full"
                 >
                   {gitLoading ? (
                     <Loader2 className="h-3.5 w-3.5 animate-spin" />

@@ -16,7 +16,7 @@ export function Layout() {
         <Topbar />
 
         <div className="relative z-0 flex-1 overflow-y-auto p-5 scrollbar-hide">
-          <div className="mx-auto flex h-full max-w-[1240px] flex-col gap-4">
+          <div className="mx-auto flex h-full max-w-[1200px] flex-col gap-4">
             {appError ? (
               <StatusBanner
                 compact
