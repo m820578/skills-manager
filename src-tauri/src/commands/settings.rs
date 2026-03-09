@@ -1,5 +1,6 @@
 use std::process::Command;
 use std::sync::Arc;
+use semver::Version;
 use tauri::State;
 
 use crate::core::{central_repo, skill_store::SkillStore};
@@ -98,8 +99,12 @@ pub fn check_app_update(app: tauri::AppHandle) -> Result<AppUpdateInfo, String> 
 }
 
 fn version_gt(a: &str, b: &str) -> bool {
-    let parse = |s: &str| -> Vec<u64> {
-        s.split('.').filter_map(|p| p.parse().ok()).collect()
-    };
+    // Prefer strict SemVer comparison (supports pre-release/build metadata).
+    if let (Ok(a_ver), Ok(b_ver)) = (Version::parse(a), Version::parse(b)) {
+        return a_ver > b_ver;
+    }
+
+    // Fallback for non-SemVer tags.
+    let parse = |s: &str| -> Vec<u64> { s.split('.').filter_map(|p| p.parse().ok()).collect() };
     parse(a) > parse(b)
 }

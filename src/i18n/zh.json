@@ -228,7 +228,8 @@
     "installUpdate": "安装更新",
     "installing": "安装中…",
     "restartToApply": "更新已安装，重启应用即可生效。",
-    "updateError": "检查更新失败。"
+    "updateError": "自动更新失败，正在跳转下载页…",
+    "download": "下载"
   },
   "common": {
     "loading": "加载中...",

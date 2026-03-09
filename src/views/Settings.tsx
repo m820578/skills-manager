@@ -135,6 +135,9 @@ export function Settings() {
       }
     } catch {
       toast.error(t("settings.updateError"));
+      if (updateInfo?.release_url) {
+        await openUrl(updateInfo.release_url);
+      }
     } finally {
       setInstalling(false);
     }
@@ -379,23 +382,32 @@ export function Settings() {
             <div className="flex gap-2">
               {updateInfo?.has_update ? (
                 IS_WINDOWS ? (
-                  <button
-                    type="button"
-                    onClick={handleAutoUpdate}
-                    disabled={installing}
-                    className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-[4px] bg-accent text-white text-[13px] font-medium transition-colors border border-accent hover:opacity-90 outline-none disabled:opacity-60"
-                  >
-                    {installing ? (
-                      <Loader2 className="w-3 h-3 animate-spin" />
-                    ) : (
-                      <Download className="w-3 h-3" />
-                    )}
-                    {installing ? t("settings.installing") : t("settings.installUpdate")}
-                  </button>
+                  <>
+                    <button
+                      type="button"
+                      onClick={handleAutoUpdate}
+                      disabled={installing}
+                      className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-[4px] bg-accent text-white text-[13px] font-medium transition-colors border border-accent hover:opacity-90 outline-none disabled:opacity-60"
+                    >
+                      {installing ? (
+                        <Loader2 className="w-3 h-3 animate-spin" />
+                      ) : (
+                        <Download className="w-3 h-3" />
+                      )}
+                      {installing ? t("settings.installing") : t("settings.installUpdate")}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => { openUrl(updateInfo.release_url).catch(() => {}); }}
+                      className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-[4px] bg-surface-hover hover:bg-surface-active text-tertiary text-[13px] font-medium transition-colors border border-border outline-none"
+                    >
+                      <ExternalLink className="w-3 h-3" /> {t("settings.download")}
+                    </button>
+                  </>
                 ) : (
                   <button
                     type="button"
-                    onClick={() => openUrl(updateInfo.release_url)}
+                    onClick={() => { openUrl(updateInfo.release_url).catch(() => {}); }}
                     className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-[4px] bg-accent text-white text-[13px] font-medium transition-colors border border-accent hover:opacity-90 outline-none"
                   >
                     <Download className="w-3 h-3" /> {t("settings.download")}
