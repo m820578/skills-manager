@@ -8,6 +8,7 @@ import { Dashboard } from "./views/Dashboard";
 import { MySkills } from "./views/MySkills";
 import { InstallSkills } from "./views/InstallSkills";
 import { Settings } from "./views/Settings";
+import { ProjectDetail } from "./views/ProjectDetail";
 
 function ThemedToaster() {
   const { resolvedTheme } = useThemeContext();
@@ -36,6 +37,7 @@ function App() {
               <Route path="/" element={<Dashboard />} />
               <Route path="/my-skills" element={<MySkills />} />
               <Route path="/install" element={<InstallSkills />} />
+              <Route path="/project/:id" element={<ProjectDetail />} />
               <Route path="/settings" element={<Settings />} />
             </Route>
           </Routes>

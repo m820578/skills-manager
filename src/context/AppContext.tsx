@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from "react";
-import type { ManagedSkill, Scenario, ToolInfo } from "../lib/tauri";
+import type { ManagedSkill, Project, Scenario, ToolInfo } from "../lib/tauri";
 import * as api from "../lib/tauri";
 import i18n from "../i18n";
 
@@ -8,6 +8,7 @@ interface AppState {
   activeScenario: Scenario | null;
   tools: ToolInfo[];
   managedSkills: ManagedSkill[];
+  projects: Project[];
   loading: boolean;
   appError: string | null;
   helpOpen: boolean;
@@ -16,6 +17,7 @@ interface AppState {
   refreshScenarios: () => Promise<void>;
   refreshTools: () => Promise<void>;
   refreshManagedSkills: () => Promise<void>;
+  refreshProjects: () => Promise<void>;
   switchScenario: (id: string) => Promise<void>;
   clearAppError: () => void;
   openHelp: () => void;
@@ -31,6 +33,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [activeScenario, setActiveScenario] = useState<Scenario | null>(null);
   const [tools, setTools] = useState<ToolInfo[]>([]);
   const [managedSkills, setManagedSkills] = useState<ManagedSkill[]>([]);
+  const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [appError, setAppError] = useState<string | null>(null);
   const [helpOpen, setHelpOpen] = useState(false);
@@ -77,11 +80,20 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   }, [setTranslatedError]);
 
+  const refreshProjects = useCallback(async () => {
+    try {
+      const p = await api.getProjects();
+      setProjects(p);
+    } catch (e) {
+      console.error("Failed to load projects:", e);
+    }
+  }, []);
+
   const refreshAppData = useCallback(async () => {
     setLoading(true);
-    await Promise.all([refreshScenarios(), refreshTools(), refreshManagedSkills()]);
+    await Promise.all([refreshScenarios(), refreshTools(), refreshManagedSkills(), refreshProjects()]);
     setLoading(false);
-  }, [refreshManagedSkills, refreshScenarios, refreshTools]);
+  }, [refreshManagedSkills, refreshProjects, refreshScenarios, refreshTools]);
 
   const handleSwitchScenario = useCallback(
     async (id: string) => {
@@ -111,6 +123,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         activeScenario,
         tools,
         managedSkills,
+        projects,
         loading,
         appError,
         helpOpen,
@@ -119,6 +132,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         refreshScenarios,
         refreshTools,
         refreshManagedSkills,
+        refreshProjects,
         switchScenario: handleSwitchScenario,
         clearAppError: () => setAppError(null),
         openHelp: () => setHelpOpen(true),

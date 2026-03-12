@@ -8,6 +8,7 @@ import {
   Plus,
   Pencil,
   Trash2,
+  FolderOpen,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
@@ -15,6 +16,7 @@ import { cn } from "../utils";
 import { useApp } from "../context/AppContext";
 import { CreateScenarioDialog } from "./CreateScenarioDialog";
 import { RenameScenarioDialog } from "./RenameScenarioDialog";
+import { AddProjectDialog } from "./AddProjectDialog";
 import { ConfirmDialog } from "./ConfirmDialog";
 import * as api from "../lib/tauri";
 import { getScenarioIconOption } from "../lib/scenarioIcons";
@@ -23,10 +25,12 @@ export function Sidebar() {
   const { t } = useTranslation();
   const location = useLocation();
   const navigate = useNavigate();
-  const { scenarios, activeScenario, switchScenario, refreshScenarios, refreshManagedSkills } = useApp();
+  const { scenarios, activeScenario, switchScenario, refreshScenarios, refreshManagedSkills, projects, refreshProjects } = useApp();
   const [showCreate, setShowCreate] = useState(false);
+  const [showAddProject, setShowAddProject] = useState(false);
   const [renameTarget, setRenameTarget] = useState<{ id: string; name: string; icon?: string | null } | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
+  const [deleteProjectTarget, setDeleteProjectTarget] = useState<{ id: string; name: string } | null>(null);
 
   const NAV_ITEMS = [
     { name: t("sidebar.dashboard"), path: "/", icon: LayoutDashboard },
@@ -89,6 +93,16 @@ export function Sidebar() {
     event.preventDefault();
     event.stopPropagation();
     setDeleteTarget(scenario);
+  };
+
+  const handleDeleteProject = async () => {
+    if (!deleteProjectTarget) return;
+    await api.removeProject(deleteProjectTarget.id);
+    await refreshProjects();
+    if (location.pathname.startsWith("/project/")) {
+      navigate("/");
+    }
+    toast.success(t("project.removed"));
   };
 
   return (
@@ -212,6 +226,82 @@ export function Sidebar() {
             <Plus className="w-3.5 h-3.5" />
             {t("sidebar.newScenario")}
           </button>
+
+          {/* Divider */}
+          <div className="mx-0.5 mt-3.5 mb-2.5 border-t border-border-subtle" />
+
+          {/* Projects */}
+          <div className="text-[13px] font-semibold text-muted mb-1.5 px-2.5 tracking-[0.1em] uppercase">
+            {t("sidebar.projects")}
+          </div>
+          <div className="space-y-0.5">
+            {projects.map((project) => {
+              const isActive = location.pathname === `/project/${project.id}`;
+              return (
+                <div
+                  key={project.id}
+                  className={cn(
+                    "group flex items-center gap-0.5 rounded-[5px] transition-colors",
+                    isActive ? "bg-surface-active" : "hover:bg-surface-hover"
+                  )}
+                >
+                  <button
+                    onClick={() => navigate(`/project/${project.id}`)}
+                    className={cn(
+                      "flex min-w-0 flex-1 items-center gap-2 px-2.5 py-[7px] text-left text-sm outline-none",
+                      isActive ? "font-medium text-primary" : "text-tertiary group-hover:text-secondary"
+                    )}
+                  >
+                    <span
+                      className={cn(
+                        "flex h-[20px] w-[20px] shrink-0 items-center justify-center rounded border",
+                        isActive
+                          ? "border-blue-500/30 bg-blue-500/10 text-blue-500"
+                          : "border-border bg-surface text-muted group-hover:border-border group-hover:text-tertiary"
+                      )}
+                    >
+                      <FolderOpen className="h-3 w-3" />
+                    </span>
+                    <span className="flex-1 truncate">{project.name}</span>
+                    {project.skill_count > 0 && (
+                      <span
+                        className={cn(
+                          "rounded-full px-1.5 text-[13px] font-medium leading-[18px]",
+                          isActive
+                            ? "bg-accent-bg text-accent-light"
+                            : "bg-surface-hover text-muted group-hover:bg-surface-active"
+                        )}
+                      >
+                        {project.skill_count}
+                      </span>
+                    )}
+                  </button>
+
+                  <div className="mr-1.5 flex items-center opacity-0 transition group-hover:opacity-100">
+                    <button
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setDeleteProjectTarget(project);
+                      }}
+                      className="rounded p-1 text-faint transition hover:bg-surface-hover hover:text-red-400"
+                      title={t("common.delete")}
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          <button
+            onClick={() => setShowAddProject(true)}
+            className="flex items-center gap-2 px-2.5 py-[7px] mt-0.5 rounded-[5px] text-[13px] text-muted hover:text-secondary hover:bg-surface-hover transition-colors w-full outline-none"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            {t("sidebar.addProject")}
+          </button>
         </div>
 
         {/* Settings */}
@@ -255,6 +345,22 @@ export function Sidebar() {
         message={t("scenario.deleteConfirm", { name: deleteTarget?.name || "" })}
         onClose={() => setDeleteTarget(null)}
         onConfirm={handleDeleteScenario}
+      />
+
+      <AddProjectDialog
+        open={showAddProject}
+        onClose={() => setShowAddProject(false)}
+        onAdded={async () => {
+          await refreshProjects();
+          toast.success(t("project.added"));
+        }}
+      />
+
+      <ConfirmDialog
+        open={deleteProjectTarget !== null}
+        message={t("project.removeConfirm", { name: deleteProjectTarget?.name || "" })}
+        onClose={() => setDeleteProjectTarget(null)}
+        onConfirm={handleDeleteProject}
       />
     </>
   );

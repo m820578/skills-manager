@@ -8,6 +8,8 @@
     "installSkills": "安装 Skills",
     "scenarios": "场景",
     "newScenario": "新建场景",
+    "projects": "项目",
+    "addProject": "添加项目",
     "settings": "设置"
   },
   "help": {
@@ -314,5 +316,32 @@
     "deleted": "场景已删除",
     "created": "场景已创建",
     "switched": "已切换到 \"{{name}}\""
+  },
+  "project": {
+    "title": "项目 Skills",
+    "path": "项目路径",
+    "skills": "Skills",
+    "noSkills": "该项目下没有 Skills",
+    "noSkillsHint": "在项目目录下创建 .claude/skills/ 子目录并添加 Skill 文件夹。",
+    "addManual": "选择项目目录",
+    "scanDir": "扫描目录",
+    "scanDirPlaceholder": "输入要扫描的根目录路径，如 ~/Work",
+    "scanResult": "发现 {{count}} 个项目",
+    "scanNoResult": "没有发现包含 .claude/skills/ 的项目",
+    "scanning": "扫描中...",
+    "removeConfirm": "确定从列表中移除项目 \"{{name}}\" 吗？不会删除项目文件。",
+    "added": "项目已添加",
+    "removed": "项目已移除",
+    "notFound": "项目不存在",
+    "alreadyExists": "该项目已添加",
+    "invalidDir": "目录中没有 .claude/skills/",
+    "addProjectTitle": "添加项目",
+    "tabManual": "手动添加",
+    "tabScan": "扫描发现",
+    "addSelected": "添加选中 ({{count}})",
+    "selectAll": "全选",
+    "deselectAll": "取消全选",
+    "openInFinder": "打开目录",
+    "skillFiles": "文件"
   }
 }

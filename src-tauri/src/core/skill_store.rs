@@ -65,6 +65,16 @@ pub struct ScenarioRecord {
     pub updated_at: i64,
 }
 
+#[derive(Debug, Clone, Serialize)]
+pub struct ProjectRecord {
+    pub id: String,
+    pub name: String,
+    pub path: String,
+    pub sort_order: i32,
+    pub created_at: i64,
+    pub updated_at: i64,
+}
+
 impl SkillStore {
     pub fn new(db_path: &PathBuf) -> Result<Self> {
         let conn = Connection::open(db_path)?;
@@ -148,6 +158,15 @@ impl SkillStore {
             CREATE TABLE IF NOT EXISTS active_scenario (
                 key TEXT PRIMARY KEY DEFAULT 'current',
                 scenario_id TEXT REFERENCES scenarios(id) ON DELETE SET NULL
+            );
+
+            CREATE TABLE IF NOT EXISTS projects (
+                id TEXT PRIMARY KEY,
+                name TEXT NOT NULL,
+                path TEXT NOT NULL UNIQUE,
+                sort_order INTEGER DEFAULT 0,
+                created_at INTEGER,
+                updated_at INTEGER
             );
             ",
         )?;
@@ -652,6 +671,67 @@ impl SkillStore {
             "INSERT OR REPLACE INTO active_scenario (key, scenario_id) VALUES ('current', ?1)",
             params![scenario_id],
         )?;
+        Ok(())
+    }
+
+    // ── Projects ──
+
+    pub fn insert_project(&self, project: &ProjectRecord) -> Result<()> {
+        let conn = self.conn.lock().unwrap();
+        conn.execute(
+            "INSERT INTO projects (id, name, path, sort_order, created_at, updated_at)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
+            params![
+                project.id,
+                project.name,
+                project.path,
+                project.sort_order,
+                project.created_at,
+                project.updated_at,
+            ],
+        )?;
+        Ok(())
+    }
+
+    pub fn get_all_projects(&self) -> Result<Vec<ProjectRecord>> {
+        let conn = self.conn.lock().unwrap();
+        let mut stmt = conn.prepare(
+            "SELECT id, name, path, sort_order, created_at, updated_at FROM projects ORDER BY sort_order, created_at",
+        )?;
+        let rows = stmt.query_map([], |row| {
+            Ok(ProjectRecord {
+                id: row.get(0)?,
+                name: row.get(1)?,
+                path: row.get(2)?,
+                sort_order: row.get(3)?,
+                created_at: row.get(4)?,
+                updated_at: row.get(5)?,
+            })
+        })?;
+        Ok(rows.filter_map(|r| r.ok()).collect())
+    }
+
+    pub fn get_project_by_id(&self, id: &str) -> Result<Option<ProjectRecord>> {
+        let conn = self.conn.lock().unwrap();
+        let mut stmt = conn.prepare(
+            "SELECT id, name, path, sort_order, created_at, updated_at FROM projects WHERE id = ?1",
+        )?;
+        let mut rows = stmt.query_map(params![id], |row| {
+            Ok(ProjectRecord {
+                id: row.get(0)?,
+                name: row.get(1)?,
+                path: row.get(2)?,
+                sort_order: row.get(3)?,
+                created_at: row.get(4)?,
+                updated_at: row.get(5)?,
+            })
+        })?;
+        Ok(rows.next().and_then(|r| r.ok()))
+    }
+
+    pub fn delete_project(&self, id: &str) -> Result<()> {
+        let conn = self.conn.lock().unwrap();
+        conn.execute("DELETE FROM projects WHERE id = ?1", params![id])?;
         Ok(())
     }
 }

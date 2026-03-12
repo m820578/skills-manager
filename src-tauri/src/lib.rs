@@ -70,6 +70,13 @@ pub fn run() {
             commands::git_backup::git_backup_push,
             commands::git_backup::git_backup_pull,
             commands::git_backup::git_backup_clone,
+            // Projects
+            commands::projects::get_projects,
+            commands::projects::add_project,
+            commands::projects::remove_project,
+            commands::projects::scan_projects,
+            commands::projects::get_project_skills,
+            commands::projects::get_project_skill_document,
             // Scenarios
             commands::scenarios::get_scenarios,
             commands::scenarios::get_active_scenario,

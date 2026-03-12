@@ -78,6 +78,29 @@ export interface SkillsShSkill {
   installs: number;
 }
 
+export interface Project {
+  id: string;
+  name: string;
+  path: string;
+  sort_order: number;
+  skill_count: number;
+  created_at: number;
+  updated_at: number;
+}
+
+export interface ProjectSkill {
+  name: string;
+  description: string | null;
+  path: string;
+  files: string[];
+}
+
+export interface ProjectSkillDocument {
+  skill_name: string;
+  filename: string;
+  content: string;
+}
+
 // ── Tools ──
 
 export const getToolStatus = () => invoke<ToolInfo[]>("get_tool_status");
@@ -249,3 +272,22 @@ export const removeSkillFromScenario = (skillId: string, scenarioId: string) =>
 
 export const reorderScenarios = (ids: string[]) =>
   invoke<void>("reorder_scenarios", { ids });
+
+// ── Projects ──
+
+export const getProjects = () => invoke<Project[]>("get_projects");
+
+export const addProject = (path: string) =>
+  invoke<Project>("add_project", { path });
+
+export const removeProject = (id: string) =>
+  invoke<void>("remove_project", { id });
+
+export const scanProjects = (root: string) =>
+  invoke<string[]>("scan_projects", { root });
+
+export const getProjectSkills = (projectId: string) =>
+  invoke<ProjectSkill[]>("get_project_skills", { projectId });
+
+export const getProjectSkillDocument = (projectPath: string, skillName: string) =>
+  invoke<ProjectSkillDocument>("get_project_skill_document", { projectPath, skillName });
