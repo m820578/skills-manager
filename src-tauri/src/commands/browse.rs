@@ -9,7 +9,7 @@ use crate::core::{
 const LEADERBOARD_CACHE_TTL: i64 = 300; // 5 minutes
 
 #[tauri::command]
-pub fn fetch_leaderboard(
+pub async fn fetch_leaderboard(
     board: String,
     store: State<'_, Arc<SkillStore>>,
 ) -> Result<Vec<SkillsShSkill>, String> {
@@ -23,7 +23,11 @@ pub fn fetch_leaderboard(
     }
 
     let board_type = LeaderboardType::from_str(&board);
-    let skills = skillssh_api::fetch_leaderboard(board_type).map_err(|e| e.to_string())?;
+    let skills = tauri::async_runtime::spawn_blocking(move || {
+        skillssh_api::fetch_leaderboard(board_type).map_err(|e| e.to_string())
+    })
+    .await
+    .map_err(|e| format!("failed to join leaderboard task: {e}"))??;
 
     // Update cache
     if let Ok(json) = serde_json::to_string(&skills) {
@@ -34,8 +38,12 @@ pub fn fetch_leaderboard(
 }
 
 #[tauri::command]
-pub fn search_skillssh(query: String, limit: Option<usize>) -> Result<Vec<SkillsShSkill>, String> {
+pub async fn search_skillssh(query: String, limit: Option<usize>) -> Result<Vec<SkillsShSkill>, String> {
     let requested = limit.unwrap_or(60);
     let bounded = requested.clamp(1, 300);
-    skillssh_api::search_skills(&query, bounded).map_err(|e| e.to_string())
+    tauri::async_runtime::spawn_blocking(move || {
+        skillssh_api::search_skills(&query, bounded).map_err(|e| e.to_string())
+    })
+    .await
+    .map_err(|e| format!("failed to join search task: {e}"))?
 }

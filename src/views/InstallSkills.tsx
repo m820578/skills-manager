@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef, useMemo } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo, useDeferredValue } from "react";
 import {
   DownloadCloud,
   UploadCloud,
@@ -31,6 +31,9 @@ import { StatusBanner } from "../components/StatusBanner";
 
 const MARKET_PAGE_SIZE = 24;
 const MARKET_SEARCH_STEP = 60;
+const MARKET_SEARCH_DEBOUNCE_MS = 450;
+const MARKET_SEARCH_CACHE_TTL_MS = 120_000;
+const MARKET_SEARCH_CACHE_MAX_ENTRIES = 150;
 
 export function InstallSkills() {
   const { t } = useTranslation();
@@ -57,7 +60,33 @@ export function InstallSkills() {
   const [importingPaths, setImportingPaths] = useState<Set<string>>(new Set());
   const [importingAll, setImportingAll] = useState(false);
   const marketListRef = useRef<HTMLDivElement | null>(null);
+  const marketSearchCacheRef = useRef<Map<string, { timestamp: number; data: SkillsShSkill[] }>>(new Map());
+  const marketSkillsLengthRef = useRef(0);
   const [debouncedMarketQuery, setDebouncedMarketQuery] = useState("");
+  const deferredMarketQuery = useDeferredValue(marketQuery);
+
+  const pruneMarketSearchCache = useCallback(() => {
+    const now = Date.now();
+    const entries = Array.from(marketSearchCacheRef.current.entries());
+
+    for (const [key, value] of entries) {
+      if (now - value.timestamp >= MARKET_SEARCH_CACHE_TTL_MS) {
+        marketSearchCacheRef.current.delete(key);
+      }
+    }
+
+    if (marketSearchCacheRef.current.size <= MARKET_SEARCH_CACHE_MAX_ENTRIES) {
+      return;
+    }
+
+    const sorted = Array.from(marketSearchCacheRef.current.entries()).sort(
+      (a, b) => a[1].timestamp - b[1].timestamp
+    );
+    const removeCount = marketSearchCacheRef.current.size - MARKET_SEARCH_CACHE_MAX_ENTRIES;
+    for (const [key] of sorted.slice(0, removeCount)) {
+      marketSearchCacheRef.current.delete(key);
+    }
+  }, []);
 
   const installedSourceRefs = useMemo(() => {
     const set = new Set<string>();
@@ -71,10 +100,14 @@ export function InstallSkills() {
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      setDebouncedMarketQuery(marketQuery);
-    }, 300);
+      setDebouncedMarketQuery(deferredMarketQuery);
+    }, MARKET_SEARCH_DEBOUNCE_MS);
     return () => clearTimeout(timer);
-  }, [marketQuery]);
+  }, [deferredMarketQuery]);
+
+  useEffect(() => {
+    marketSkillsLengthRef.current = marketSkills.length;
+  }, [marketSkills.length]);
 
   useEffect(() => {
     const tab = searchParams.get("tab");
@@ -108,7 +141,24 @@ export function InstallSkills() {
     if (activeTab !== "market") return;
 
     const query = debouncedMarketQuery.trim();
-    const loadingMore = query.length > 0 && marketSkills.length > 0 && marketSearchLimit > marketSkills.length;
+    const loadingMore =
+      query.length > 0 &&
+      marketSkillsLengthRef.current > 0 &&
+      marketSearchLimit > marketSkillsLengthRef.current;
+
+    if (query.length > 0 && !loadingMore) {
+      const cacheKey = `${query.toLowerCase()}|${marketSearchLimit}`;
+      const cached = marketSearchCacheRef.current.get(cacheKey);
+      if (cached && Date.now() - cached.timestamp < MARKET_SEARCH_CACHE_TTL_MS) {
+        setMarketSkills(cached.data);
+        setMarketLoading(false);
+        setMarketLoadingMore(false);
+        setMarketPage(1);
+        setMarketError(null);
+        return;
+      }
+    }
+
     setMarketLoadingMore(loadingMore);
     setMarketLoading(true);
     if (!loadingMore) {
@@ -125,6 +175,11 @@ export function InstallSkills() {
       .then((result) => {
         if (stale) return;
         setMarketSkills(result);
+        if (query.length > 0 && !loadingMore) {
+          const cacheKey = `${query.toLowerCase()}|${marketSearchLimit}`;
+          marketSearchCacheRef.current.set(cacheKey, { timestamp: Date.now(), data: result });
+          pruneMarketSearchCache();
+        }
         if (!loadingMore) {
           setMarketSourceFilter("all");
         }
@@ -143,7 +198,7 @@ export function InstallSkills() {
       });
 
     return () => { stale = true; };
-  }, [activeTab, debouncedMarketQuery, marketReloadKey, marketSearchLimit, marketTab, t]);
+  }, [activeTab, debouncedMarketQuery, marketReloadKey, marketSearchLimit, marketTab, pruneMarketSearchCache, t]);
 
   useEffect(() => {
     if (activeTab === "local" && !scanResult && !scanLoading) {
