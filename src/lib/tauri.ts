@@ -72,6 +72,7 @@ export interface DiscoveredGroup {
   fingerprint: string | null;
   locations: { id: string; tool: string; found_path: string }[];
   imported: boolean;
+  found_at: number;
 }
 
 export interface ScanResult {
@@ -250,6 +251,19 @@ export const searchSkillssh = (query: string, limit?: number) =>
     limit: limit ?? null,
   });
 
+export const searchSkillsmp = (
+  query: string,
+  ai?: boolean,
+  page?: number,
+  limit?: number,
+) =>
+  invoke<SkillsShSkill[]>("search_skillsmp", {
+    query,
+    ai: ai ?? null,
+    page: page ?? null,
+    limit: limit ?? null,
+  });
+
 // ── Settings ──
 
 export const getSettings = (key: string) =>
@@ -373,6 +387,12 @@ export const reorderScenarios = (ids: string[]) =>
 
 export const reorderProjects = (ids: string[]) =>
   invoke<void>("reorder_projects", { ids });
+
+export const getScenarioSkillOrder = (scenarioId: string) =>
+  invoke<string[]>("get_scenario_skill_order", { scenarioId });
+
+export const reorderScenarioSkills = (scenarioId: string, skillIds: string[]) =>
+  invoke<void>("reorder_scenario_skills", { scenarioId, skillIds });
 
 // ── Projects ──
 

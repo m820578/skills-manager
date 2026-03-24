@@ -20,6 +20,8 @@ import {
   Search,
   X,
   MoreHorizontal,
+  Pencil,
+  Calendar,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
@@ -29,7 +31,7 @@ import * as api from "../lib/tauri";
 import type { ScanResult, SkillsShSkill, BatchImportResult, GitPreviewResult } from "../lib/tauri";
 import { open } from "@tauri-apps/plugin-dialog";
 import { openUrl } from "@tauri-apps/plugin-opener";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import { listen } from "@tauri-apps/api/event";
 import { StatusBanner } from "../components/StatusBanner";
 import { getErrorMessage, getErrorKind } from "../lib/error";
@@ -42,10 +44,11 @@ const MARKET_SEARCH_CACHE_MAX_ENTRIES = 150;
 
 export function InstallSkills() {
   const { t } = useTranslation();
-  const { refreshScenarios, refreshManagedSkills, managedSkills } = useApp();
+  const { refreshScenarios, refreshManagedSkills, managedSkills, openSkillDetailById } = useApp();
+  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useState<"market" | "local" | "git">("market");
-  const [marketTab, setMarketTab] = useState<"hot" | "trending" | "alltime">("hot");
+  const [marketTab, setMarketTab] = useState<"hot" | "trending" | "alltime">("alltime");
   const [marketQuery, setMarketQuery] = useState("");
   const [marketSourceFilter, setMarketSourceFilter] = useState("all");
   const [marketSkills, setMarketSkills] = useState<SkillsShSkill[]>([]);
@@ -68,6 +71,10 @@ export function InstallSkills() {
   const [localError, setLocalError] = useState<string | null>(null);
   const [importingPaths, setImportingPaths] = useState<Set<string>>(new Set());
   const [importingAll, setImportingAll] = useState(false);
+  const [renameEditing, setRenameEditing] = useState<Record<string, string>>({});
+  const [expandedSources, setExpandedSources] = useState<Set<string>>(new Set());
+  const [aiSearch, setAiSearch] = useState(false);
+  const [skillsmpApiKey, setSkillsmpApiKey] = useState<string | null>(null);
   const marketListRef = useRef<HTMLDivElement | null>(null);
   const [sourceOverflowOpen, setSourceOverflowOpen] = useState(false);
   const [sourceOverflowSide, setSourceOverflowSide] = useState<"left" | "right">("left");
@@ -90,6 +97,21 @@ export function InstallSkills() {
     setSourceSearch("");
     setSourceFocusedIndex(-1);
   }, []);
+
+  const managedSkillsRef = useRef(managedSkills);
+  managedSkillsRef.current = managedSkills;
+
+  const goToSkill = useCallback((skillName: string) => {
+    // Use ref to get the latest managedSkills after refresh
+    const skills = managedSkillsRef.current;
+    const skill = skills.find(
+      (s) => s.name === skillName || s.source_ref === skillName
+    );
+    if (skill) {
+      openSkillDetailById(skill.id);
+    }
+    navigate("/my-skills");
+  }, [navigate, openSkillDetailById]);
 
   const pruneMarketSearchCache = useCallback(() => {
     const now = Date.now();
@@ -124,6 +146,15 @@ export function InstallSkills() {
     return set;
   }, [managedSkills]);
 
+  const findInstalledByGitUrl = useCallback((url: string) => {
+    const trimmed = url.trim().replace(/\.git$/, "").toLowerCase();
+    return managedSkills.find((s) => {
+      if (!s.source_ref) return false;
+      const ref = s.source_ref.replace(/\.git$/, "").toLowerCase();
+      return ref === trimmed || ref.endsWith("/" + trimmed.split("/").slice(-2).join("/"));
+    });
+  }, [managedSkills]);
+
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedMarketQuery(deferredMarketQuery);
@@ -147,6 +178,10 @@ export function InstallSkills() {
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [resetSourceOverflowState, sourceOverflowOpen]);
+
+  useEffect(() => {
+    api.getSettings("skillsmp_api_key").then((v) => setSkillsmpApiKey(v || null));
+  }, []);
 
   useEffect(() => {
     const tab = searchParams.get("tab");
@@ -186,7 +221,7 @@ export function InstallSkills() {
       marketSearchLimit > marketSkillsLengthRef.current;
 
     if (query.length > 0 && !loadingMore) {
-      const cacheKey = `${query.toLowerCase()}|${marketSearchLimit}`;
+      const cacheKey = `${query.toLowerCase()}|${aiSearch ? "ai" : "kw"}|${marketSearchLimit}`;
       const cached = marketSearchCacheRef.current.get(cacheKey);
       if (cached && Date.now() - cached.timestamp < MARKET_SEARCH_CACHE_TTL_MS) {
         setMarketSkills(cached.data);
@@ -207,7 +242,9 @@ export function InstallSkills() {
 
     let stale = false;
     const request = query
-      ? api.searchSkillssh(query, marketSearchLimit)
+      ? (aiSearch
+        ? api.searchSkillsmp(query, true, undefined, marketSearchLimit)
+        : api.searchSkillssh(query, marketSearchLimit))
       : api.fetchLeaderboard(marketTab);
 
     request
@@ -215,7 +252,7 @@ export function InstallSkills() {
         if (stale) return;
         setMarketSkills(result);
         if (query.length > 0 && !loadingMore) {
-          const cacheKey = `${query.toLowerCase()}|${marketSearchLimit}`;
+          const cacheKey = `${query.toLowerCase()}|${aiSearch ? "ai" : "kw"}|${marketSearchLimit}`;
           marketSearchCacheRef.current.set(cacheKey, { timestamp: Date.now(), data: result });
           pruneMarketSearchCache();
         }
@@ -237,7 +274,7 @@ export function InstallSkills() {
       });
 
     return () => { stale = true; };
-  }, [activeTab, debouncedMarketQuery, marketReloadKey, marketSearchLimit, marketTab, pruneMarketSearchCache, t]);
+  }, [activeTab, aiSearch, debouncedMarketQuery, marketReloadKey, marketSearchLimit, marketTab, pruneMarketSearchCache, t]);
 
   useEffect(() => {
     if (activeTab === "local" && !scanResult && !scanLoading) {
@@ -245,24 +282,25 @@ export function InstallSkills() {
     }
   }, [activeTab, scanLoading, scanResult, runScan]);
 
-  const installLocalSource = (sourcePath: string) => {
+  const installLocalSource = async (sourcePath: string) => {
     const name = sourcePath.split("/").pop() || sourcePath;
-    toast.promise(
-      (async () => {
-        await api.installLocal(sourcePath);
-        await Promise.all([refreshScenarios(), refreshManagedSkills()]);
-        await runScan();
-      })(),
-      {
-        loading: t("install.toast.installing", { name }),
-        success: t("install.toast.success", { name }),
-        error: (e) => {
-          const message = e?.toString?.() || t("common.error");
-          setLocalError(message);
-          return message;
+    const toastId = toast.loading(t("install.toast.installing", { name }));
+    try {
+      await api.installLocal(sourcePath);
+      await Promise.all([refreshScenarios(), refreshManagedSkills()]);
+      await runScan();
+      toast.success(t("install.toast.success", { name }), {
+        id: toastId,
+        action: {
+          label: t("install.toast.view"),
+          onClick: () => goToSkill(name),
         },
-      }
-    );
+      });
+    } catch (e) {
+      const message = (e as Error)?.toString?.() || t("common.error");
+      setLocalError(message);
+      toast.error(message, { id: toastId });
+    }
   };
 
   const handleLocalFolderInstall = async () => {
@@ -377,7 +415,13 @@ export function InstallSkills() {
       );
       await api.installFromSkillssh(skill.source, skill.skill_id);
       await Promise.all([refreshScenarios(), refreshManagedSkills()]);
-      toast.success(t("install.toast.success", { name: displayName }), { id: toastId });
+      toast.success(t("install.toast.success", { name: displayName }), {
+        id: toastId,
+        action: {
+          label: t("install.toast.view"),
+          onClick: () => goToSkill(displayName),
+        },
+      });
     } catch (error: unknown) {
       if (getErrorKind(error) === "cancelled") {
         toast.info(t("install.toast.cancelled"), { id: toastId });
@@ -580,10 +624,59 @@ export function InstallSkills() {
     }
     return filtered;
   }, [marketSkills, marketSourceFilter, debouncedMarketQuery]);
-  const totalMarketPages = Math.max(1, Math.ceil(filteredMarketSkills.length / MARKET_PAGE_SIZE));
+
+  // Group skills by source: show top skill + collapse rest behind "+N more"
+  type MarketEntry =
+    | { type: "skill"; skill: SkillsShSkill }
+    | { type: "collapsed"; source: string; skills: SkillsShSkill[]; totalInstalls: number };
+  const groupedMarketEntries = useMemo<MarketEntry[]>(() => {
+    // When filtering a specific source or searching, show all skills flat
+    if (marketSourceFilter !== "all" || debouncedMarketQuery.trim().length > 0) {
+      return filteredMarketSkills.map((skill) => ({ type: "skill" as const, skill }));
+    }
+    const sourceMap = new Map<string, SkillsShSkill[]>();
+    for (const skill of filteredMarketSkills) {
+      const arr = sourceMap.get(skill.source);
+      if (arr) arr.push(skill);
+      else sourceMap.set(skill.source, [skill]);
+    }
+    const entries: MarketEntry[] = [];
+    const seen = new Set<string>();
+    for (const skill of filteredMarketSkills) {
+      if (seen.has(skill.source)) continue;
+      seen.add(skill.source);
+      const group = sourceMap.get(skill.source)!;
+      entries.push({ type: "skill", skill: group[0] });
+      if (group.length > 1) {
+        const rest = group.slice(1);
+        const totalInstalls = group.reduce((sum, s) => sum + s.installs, 0);
+        entries.push({ type: "collapsed", source: skill.source, skills: rest, totalInstalls });
+      }
+    }
+    return entries;
+  }, [filteredMarketSkills, marketSourceFilter, debouncedMarketQuery]);
+
+  // Expand collapsed entries based on expandedSources
+  const visibleMarketEntries = useMemo<MarketEntry[]>(() => {
+    const result: MarketEntry[] = [];
+    for (const entry of groupedMarketEntries) {
+      if (entry.type === "skill") {
+        result.push(entry);
+      } else if (expandedSources.has(entry.source)) {
+        for (const skill of entry.skills) {
+          result.push({ type: "skill", skill });
+        }
+      } else {
+        result.push(entry);
+      }
+    }
+    return result;
+  }, [groupedMarketEntries, expandedSources]);
+
+  const totalMarketPages = Math.max(1, Math.ceil(visibleMarketEntries.length / MARKET_PAGE_SIZE));
   const currentMarketPage = Math.min(marketPage, totalMarketPages);
   const marketPageStart = (currentMarketPage - 1) * MARKET_PAGE_SIZE;
-  const paginatedMarketSkills = filteredMarketSkills.slice(
+  const paginatedMarketEntries = visibleMarketEntries.slice(
     marketPageStart,
     marketPageStart + MARKET_PAGE_SIZE
   );
@@ -683,16 +776,16 @@ export function InstallSkills() {
                   {!hasMarketQuery ? (
                     <div className="app-segmented shrink-0 bg-background">
                       {[
-                        { id: "hot" as const, label: t("install.hot"), icon: Star },
-                        { id: "trending" as const, label: t("install.trending"), icon: TrendingUp },
                         { id: "alltime" as const, label: t("install.all"), icon: Clock },
+                        { id: "trending" as const, label: t("install.trending"), icon: TrendingUp },
+                        { id: "hot" as const, label: t("install.hot"), icon: Star },
                       ].map((tab) => {
                         const Icon = tab.icon;
                         const isActive = marketTab === tab.id;
                         return (
                           <button
                             key={tab.id}
-                            onClick={() => setMarketTab(tab.id)}
+                            onClick={() => { setMarketTab(tab.id); setExpandedSources(new Set()); }}
                             className={cn(
                               "app-segmented-button flex items-center gap-1.5",
                               isActive && "app-segmented-button-active"
@@ -715,13 +808,39 @@ export function InstallSkills() {
                         setMarketQuery(event.target.value);
                         setMarketSearchLimit(MARKET_SEARCH_STEP);
                       }}
-                      placeholder={t("install.searchMarket")}
+                      placeholder={aiSearch ? t("install.aiSearchPlaceholder", { defaultValue: "AI search — describe what you need..." }) : t("install.searchMarket")}
                       className="app-input w-full bg-background pl-9"
                       autoCapitalize="none"
                       autoCorrect="off"
                       spellCheck={false}
                     />
                   </div>
+                  <button
+                    onClick={() => {
+                      if (skillsmpApiKey) {
+                        setAiSearch((v) => !v);
+                      } else {
+                        toast.info(
+                          t("install.aiSearchNoKey", { defaultValue: "Set your SkillsMP API key in Settings to enable AI search" }),
+                          {
+                            action: {
+                              label: t("common.goToSettings", { defaultValue: "Settings" }),
+                              onClick: () => navigate("/settings"),
+                            },
+                          }
+                        );
+                      }
+                    }}
+                    className={cn(
+                      "shrink-0 rounded-[6px] border px-2.5 py-1.5 text-[13px] font-medium transition-colors",
+                      aiSearch && skillsmpApiKey
+                        ? "border-accent-border bg-accent-dark text-white"
+                        : "border-border-subtle bg-surface text-muted hover:bg-surface-hover"
+                    )}
+                    title={t("install.aiSearchToggle", { defaultValue: "AI-powered search (SkillsMP)" })}
+                  >
+                    AI
+                  </button>
                 </div>
               </div>
 
@@ -939,7 +1058,46 @@ export function InstallSkills() {
               ) : (
                 <>
                   <div className="grid grid-cols-2 gap-2.5 lg:grid-cols-3">
-                    {paginatedMarketSkills.map((skill) => {
+                    {paginatedMarketEntries.map((entry) => {
+                      if (entry.type === "collapsed") {
+                        const owner = entry.source.split("/")[0];
+                        const avatarUrl = `https://github.com/${owner}.png?size=32`;
+                        const formatCount = (n: number) =>
+                          n >= 1_000_000 ? `${(n / 1_000_000).toFixed(1)}M`
+                            : n >= 1_000 ? `${(n / 1_000).toFixed(1)}K`
+                            : String(n);
+                        return (
+                          <button
+                            key={`collapsed-${entry.source}`}
+                            onClick={() =>
+                              setExpandedSources((prev) => {
+                                const next = new Set(prev);
+                                next.add(entry.source);
+                                return next;
+                              })
+                            }
+                            className="app-panel col-span-2 flex items-center gap-2 p-3 text-left text-[13px] text-muted transition-colors hover:border-border hover:text-secondary lg:col-span-3"
+                          >
+                            <img
+                              src={avatarUrl}
+                              alt={owner}
+                              className="h-5 w-5 shrink-0 rounded-full border border-border-subtle"
+                              loading="lazy"
+                            />
+                            <span>
+                              +{entry.skills.length} more from{" "}
+                              <span className="font-medium text-accent-light">{entry.source}</span>
+                              {marketTab === "alltime" && entry.totalInstalls > 0 && (
+                                <span className="ml-1 text-faint">
+                                  ({formatCount(entry.totalInstalls)} total)
+                                </span>
+                              )}
+                            </span>
+                          </button>
+                        );
+                      }
+
+                      const skill = entry.skill;
                       const displayName = skill.name || skill.skill_id;
                       const showSkillId = skill.skill_id.trim() !== displayName.trim();
                       const owner = skill.source.split("/")[0];
@@ -1014,12 +1172,16 @@ export function InstallSkills() {
                           <span className="rounded-[5px] bg-accent-bg px-1.5 py-0.5 text-[13px] leading-4 font-medium text-accent-light">
                             @{skill.source}
                           </span>
-                          <span className="inline-flex items-center gap-1 rounded-[5px] border border-border-subtle bg-background px-1.5 py-0.5 text-[13px] leading-4 text-muted">
-                            <DownloadCloud className="h-3 w-3" />
-                            {skill.installs > 1000
-                              ? `${(skill.installs / 1000).toFixed(0)}k`
-                              : skill.installs}
-                          </span>
+                          {marketTab === "alltime" && skill.installs > 0 && (
+                            <span className="inline-flex items-center gap-1 rounded-[5px] border border-border-subtle bg-background px-1.5 py-0.5 text-[13px] leading-4 text-muted">
+                              <DownloadCloud className="h-3 w-3" />
+                              {skill.installs >= 1_000_000
+                                ? `${(skill.installs / 1_000_000).toFixed(1)}M`
+                                : skill.installs >= 1_000
+                                  ? `${(skill.installs / 1_000).toFixed(1)}K`
+                                  : skill.installs}
+                            </span>
+                          )}
                           {isInstalled ? (
                             <span className="inline-flex items-center gap-1 rounded-[5px] border border-emerald-500/20 bg-emerald-500/10 px-1.5 py-0.5 text-[13px] leading-4 font-medium text-emerald-400">
                               <Check className="h-3 w-3" />
@@ -1226,24 +1388,77 @@ export function InstallSkills() {
                       const [primaryLocation, ...otherLocations] = group.locations;
                       const primaryPath = primaryLocation?.found_path;
                       const isImporting = !!primaryPath && importingPaths.has(primaryPath);
+                      const isRenaming = group.name in renameEditing;
+                      const importName = renameEditing[group.name] ?? group.name;
+                      const foundDate = new Date(group.found_at).toLocaleDateString(undefined, {
+                        year: "numeric",
+                        month: "short",
+                        day: "numeric",
+                      });
 
                       return (
                         <article key={group.name} className="border-b border-border-subtle last:border-b-0">
                           <div className="flex items-start justify-between gap-3 px-3 py-2">
                             <div className="min-w-0 flex-1 space-y-1.5">
                               <div className="flex min-w-0 items-center gap-2">
-                              <h3 className="truncate text-[13px] font-semibold text-secondary">
-                                {group.name}
-                              </h3>
-                              {group.imported ? (
-                                <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-2 py-0.5 text-[13px] font-semibold text-emerald-400">
-                                  <Check className="h-3 w-3" />
-                                  {t("install.scan.imported")}
+                                {isRenaming ? (
+                                  <input
+                                    autoFocus
+                                    value={renameEditing[group.name]}
+                                    onChange={(e) =>
+                                      setRenameEditing((prev) => ({ ...prev, [group.name]: e.target.value }))
+                                    }
+                                    onBlur={() => {
+                                      if (!renameEditing[group.name]?.trim()) {
+                                        setRenameEditing((prev) => {
+                                          const next = { ...prev };
+                                          delete next[group.name];
+                                          return next;
+                                        });
+                                      }
+                                    }}
+                                    onKeyDown={(e) => {
+                                      if (e.key === "Escape") {
+                                        setRenameEditing((prev) => {
+                                          const next = { ...prev };
+                                          delete next[group.name];
+                                          return next;
+                                        });
+                                      } else if (e.key === "Enter") {
+                                        (e.target as HTMLInputElement).blur();
+                                      }
+                                    }}
+                                    className="min-w-0 max-w-[220px] rounded border border-accent-border bg-surface px-1.5 py-0.5 text-[13px] font-semibold text-secondary outline-none focus:ring-1 focus:ring-accent"
+                                  />
+                                ) : (
+                                  <h3 className="truncate text-[13px] font-semibold text-secondary">
+                                    {group.name}
+                                  </h3>
+                                )}
+                                {!group.imported && !isRenaming ? (
+                                  <button
+                                    onClick={() =>
+                                      setRenameEditing((prev) => ({ ...prev, [group.name]: group.name }))
+                                    }
+                                    className="shrink-0 rounded p-0.5 text-muted transition-colors hover:bg-surface-hover hover:text-secondary"
+                                    title={t("install.scan.rename")}
+                                  >
+                                    <Pencil className="h-3 w-3" />
+                                  </button>
+                                ) : null}
+                                {group.imported ? (
+                                  <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-2 py-0.5 text-[13px] font-semibold text-emerald-400">
+                                    <Check className="h-3 w-3" />
+                                    {t("install.scan.imported")}
+                                  </span>
+                                ) : null}
+                                <span className="shrink-0 rounded-full border border-border-subtle bg-surface px-2 py-0.5 text-[13px] text-muted">
+                                  {t("install.scan.locations", { count: group.locations.length })}
                                 </span>
-                              ) : null}
-                              <span className="shrink-0 rounded-full border border-border-subtle bg-surface px-2 py-0.5 text-[13px] text-muted">
-                                {t("install.scan.locations", { count: group.locations.length })}
-                              </span>
+                                <span className="inline-flex shrink-0 items-center gap-1 text-[11px] text-muted">
+                                  <Calendar className="h-3 w-3" />
+                                  {foundDate}
+                                </span>
                               </div>
 
                               {primaryLocation ? (
@@ -1261,7 +1476,7 @@ export function InstallSkills() {
                             <div className="flex shrink-0 items-start justify-end">
                               {group.imported ? null : (
                                 <button
-                                  onClick={() => primaryPath && handleImportDiscovered(primaryPath, group.name)}
+                                  onClick={() => primaryPath && handleImportDiscovered(primaryPath, importName)}
                                   disabled={!primaryPath || isImporting}
                                   className="inline-flex items-center justify-center gap-1.5 rounded-[6px] border border-accent-border bg-accent-dark px-2.5 py-1.5 text-[13px] font-medium text-white transition-colors hover:bg-accent disabled:opacity-50"
                                 >
@@ -1327,6 +1542,14 @@ export function InstallSkills() {
                   className="app-input w-full bg-background"
                 />
               </div>
+              {gitUrl.trim() && findInstalledByGitUrl(gitUrl) && (
+                <div className="flex items-center gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-[13px] text-amber-400">
+                  <Check className="h-3.5 w-3.5 shrink-0" />
+                  <span>
+                    {t("install.gitAlreadyInstalled", { name: findInstalledByGitUrl(gitUrl)!.name })}
+                  </span>
+                </div>
+              )}
               <div className="flex gap-2 pt-2">
                 {gitLoading ? (
                   <button
@@ -1341,10 +1564,17 @@ export function InstallSkills() {
                   <button
                     onClick={handleGitPreview}
                     disabled={!gitUrl.trim()}
-                    className="app-button-primary flex w-full"
+                    className={cn(
+                      "flex w-full",
+                      gitUrl.trim() && findInstalledByGitUrl(gitUrl)
+                        ? "app-button-secondary bg-background"
+                        : "app-button-primary"
+                    )}
                   >
                     <DownloadCloud className="h-3.5 w-3.5" />
-                    {t("install.installClone")}
+                    {gitUrl.trim() && findInstalledByGitUrl(gitUrl)
+                      ? t("install.gitReinstall")
+                      : t("install.installClone")}
                   </button>
                 )}
               </div>

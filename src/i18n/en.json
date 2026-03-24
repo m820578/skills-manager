@@ -104,6 +104,8 @@
     "gitCurrentVersionSnapshot": "Current: {{tag}}",
     "gitCurrentVersionRestored": "Current: restored from {{tag}}",
     "gitCurrentVersionUnknown": "Current: no snapshot",
+    "updateNotification": "{{count}} skill(s) have updates available",
+    "viewUpdates": "View",
     "compactEnabledCount": "{{count}} enabled",
     "confirmSyncTitle": "Confirm sync scope",
     "confirmUnsyncTitle": "Confirm unsync scope",
@@ -222,7 +224,8 @@
       "success": "{{name}} installed successfully",
       "done": "Done",
       "cancelled": "Installation cancelled",
-      "timeout": "Installation timed out — check your network"
+      "timeout": "Installation timed out — check your network",
+      "view": "View"
     },
     "local": {
       "title": "Import a local skill source",
@@ -241,6 +244,10 @@
     "gitDesc": "Enter a public or private Git repository URL. For private repos, ensure SSH keys are configured.",
     "repoUrl": "Repository URL",
     "repoUrlPlaceholder": "https://github.com/user/repo.git or git@github.com...",
+    "gitAlreadyInstalled": "\"{{name}}\" is already installed. Reinstalling will update it.",
+    "aiSearchPlaceholder": "AI search — describe what you need...",
+    "aiSearchNoKey": "Set your SkillsMP API key in Settings to enable AI search",
+    "aiSearchToggle": "AI-powered search (SkillsMP)",
     "installClone": "Clone & Preview",
     "gitPreview": {
       "title": "Select Skills to Import",
@@ -262,6 +269,7 @@
       "imported": "Imported",
       "importedOne": "Imported {{name}}",
       "importedAll": "Imported all local skills",
+      "rename": "Rename",
       "noResults": "No local skills found",
       "noResultsHint": "Everything may already be managed, or those tool folders do not contain skills yet.",
       "locations": "{{count}} locations",
@@ -301,6 +309,12 @@
     "themeLight": "Light",
     "themeDark": "Dark",
     "themeSystem": "System",
+    "textSize": "Text Size",
+    "textSizeDesc": "Adjust the app's base font size.",
+    "textSizeSmall": "Small",
+    "textSizeDefault": "Default",
+    "textSizeLarge": "Large",
+    "textSizeXLarge": "Extra Large",
     "language": "Language",
     "help": "Help",
     "about": "About",
@@ -326,6 +340,10 @@
     "gitSyncConfig": "Git Sync Configuration",
     "gitSyncConfigDesc": "This page stores remote repository preferences only. Initialize and run sync from the My Skills page.",
     "gitConfigSaved": "Git sync configuration saved",
+    "skillsmpTitle": "SkillsMP AI Search",
+    "skillsmpApiKey": "API Key",
+    "skillsmpDesc": "Enter your SkillsMP API key to enable AI-powered skill search.",
+    "skillsmpGetKey": "Get your API key",
     "gitStartBackup": "Start Backup",
     "gitStartHint": "If Remote URL is filled, it will clone from remote; otherwise it initializes a local repository.",
     "gitNotInitialized": "Not initialized",
@@ -404,7 +422,8 @@
     "rename": "Rename",
     "save": "Save",
     "create": "Create",
-    "search": "Search"
+    "search": "Search",
+    "goToSettings": "Settings"
   },
   "scenario": {
     "create": "New Scenario",

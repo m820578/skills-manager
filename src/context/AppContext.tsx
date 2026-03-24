@@ -4,6 +4,7 @@ import { listen } from "@tauri-apps/api/event";
 import type { ManagedSkill, Project, Scenario, ToolInfo } from "../lib/tauri";
 import * as api from "../lib/tauri";
 import i18n from "../i18n";
+import { toast } from "sonner";
 
 interface AppState {
   scenarios: Scenario[];
@@ -114,6 +115,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     async function init() {
       await refreshAppData();
+      // Apply saved text size on startup
+      const savedSize = await api.getSettings("text_size").catch(() => null);
+      if (savedSize) {
+        const zoomMap: Record<string, string> = { small: "0.9", default: "1", large: "1.1", xlarge: "1.2" };
+        document.documentElement.style.zoom = zoomMap[savedSize] || "1";
+      }
     }
     init();
   }, [refreshAppData]);
@@ -131,6 +138,49 @@ export function AppProvider({ children }: { children: ReactNode }) {
         });
     };
   }, [refreshManagedSkills, refreshScenarios]);
+
+  // Auto-check skill updates on startup (non-blocking, silent)
+  useEffect(() => {
+    if (loading || managedSkills.length === 0) return;
+    const hasGitSkills = managedSkills.some(
+      (s) => s.source_type === "git" || s.source_type === "skillssh"
+    );
+    if (!hasGitSkills) return;
+
+    // Delay to avoid slowing down initial render
+    const timer = setTimeout(() => {
+      api.checkAllSkillUpdates(false)
+        .then(async () => {
+          const skills = await api.getManagedSkills();
+          setManagedSkills(skills);
+          const updatable = skills.filter((s) => s.update_status === "update_available");
+          if (updatable.length > 0) {
+            toast.info(
+              i18n.t("mySkills.updateNotification", { count: updatable.length }),
+              {
+                duration: 8000,
+                action: {
+                  label: i18n.t("mySkills.viewUpdates"),
+                  onClick: () => {
+                    setDetailSkillId(updatable[0].id);
+                    // Navigate to my-skills page — AppProvider is outside Router,
+                    // so use pushState + popstate event for SPA navigation that
+                    // preserves React state (window.location.href would discard it).
+                    if (!window.location.pathname.endsWith("/my-skills")) {
+                      window.history.pushState(null, "", "/my-skills");
+                      window.dispatchEvent(new PopStateEvent("popstate"));
+                    }
+                  },
+                },
+              }
+            );
+          }
+        })
+        .catch(() => {}); // silent failure
+    }, 3000);
+    return () => clearTimeout(timer);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading]);
 
   return (
     <AppContext.Provider

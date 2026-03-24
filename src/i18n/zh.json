@@ -104,6 +104,8 @@
     "gitCurrentVersionSnapshot": "当前：{{tag}}",
     "gitCurrentVersionRestored": "当前：从 {{tag}} 恢复",
     "gitCurrentVersionUnknown": "当前：无快照",
+    "updateNotification": "{{count}} 个 Skill 有可用更新",
+    "viewUpdates": "查看",
     "compactEnabledCount": "已启用 {{count}} 个",
     "confirmSyncTitle": "确认同步范围",
     "confirmUnsyncTitle": "确认取消同步范围",
@@ -222,7 +224,8 @@
       "success": "{{name}} 安装成功",
       "done": "完成",
       "cancelled": "安装已取消",
-      "timeout": "安装超时 — 请检查网络连接"
+      "timeout": "安装超时 — 请检查网络连接",
+      "view": "查看"
     },
     "local": {
       "title": "导入本地 Skill 源",
@@ -241,6 +244,10 @@
     "gitDesc": "输入公共或私有 Git 仓库地址。私有仓库请确保本地已配置对应的 SSH 密钥。",
     "repoUrl": "仓库地址",
     "repoUrlPlaceholder": "https://github.com/user/repo.git 或 git@github.com...",
+    "gitAlreadyInstalled": "\"{{name}}\" 已安装，重新安装将会更新。",
+    "aiSearchPlaceholder": "AI 搜索 — 描述你需要什么...",
+    "aiSearchNoKey": "请在设置中配置 SkillsMP API Key 以启用 AI 搜索",
+    "aiSearchToggle": "AI 搜索（SkillsMP）",
     "installClone": "克隆并预览",
     "gitPreview": {
       "title": "选择要导入的技能",
@@ -262,6 +269,7 @@
       "imported": "已导入",
       "importedOne": "已导入 {{name}}",
       "importedAll": "已导入全部本地 Skills",
+      "rename": "重命名",
       "noResults": "没有发现可导入的本地 Skills",
       "noResultsHint": "当前目录可能已经全部纳入管理，或者相关 Agent 目录中还没有 Skills。",
       "locations": "{{count}} 个来源位置",
@@ -301,6 +309,12 @@
     "themeLight": "浅色",
     "themeDark": "深色",
     "themeSystem": "跟随系统",
+    "textSize": "文字大小",
+    "textSizeDesc": "调整应用的基础字号。",
+    "textSizeSmall": "小",
+    "textSizeDefault": "默认",
+    "textSizeLarge": "大",
+    "textSizeXLarge": "特大",
     "language": "语言",
     "help": "帮助",
     "about": "关于",
@@ -326,6 +340,10 @@
     "gitSyncConfig": "Git 同步配置",
     "gitSyncConfigDesc": "这里只保存远程仓库地址等偏好；初始化与同步操作请在“我的 Skills”页面执行。",
     "gitConfigSaved": "Git 同步配置已保存",
+    "skillsmpTitle": "SkillsMP AI 搜索",
+    "skillsmpApiKey": "API Key",
+    "skillsmpDesc": "输入你的 SkillsMP API Key 以启用 AI 搜索。",
+    "skillsmpGetKey": "获取 API Key",
     "gitStartBackup": "开始备份",
     "gitStartHint": "填写远程地址会从远程克隆；留空则初始化本地仓库。",
     "gitNotInitialized": "尚未初始化",
@@ -404,7 +422,8 @@
     "rename": "重命名",
     "save": "保存",
     "create": "创建",
-    "search": "搜索"
+    "search": "搜索",
+    "goToSettings": "设置"
   },
   "scenario": {
     "create": "新建场景",

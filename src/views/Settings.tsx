@@ -16,6 +16,8 @@ import {
   Monitor,
   BookOpen,
   Download,
+  Type,
+  Key,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
@@ -50,6 +52,9 @@ export function Settings() {
   const [gitRemoteSaving, setGitRemoteSaving] = useState(false);
   const [proxyInput, setProxyInput] = useState("");
   const [proxySaving, setProxySaving] = useState(false);
+  const [textSize, setTextSize] = useState("default");
+  const [skillsmpApiKey, setSkillsmpApiKey] = useState("");
+  const [skillsmpSaving, setSkillsmpSaving] = useState(false);
   const GITHUB_URL = "https://github.com/xingkongliang/skills-manager";
 
   useEffect(() => {
@@ -61,6 +66,8 @@ export function Settings() {
       const normalized = (v ?? "true").trim().toLowerCase();
       setShowTrayIcon(!(normalized === "false" || normalized === "0" || normalized === "no" || normalized === "off"));
     });
+    api.getSettings("text_size").then((v) => { if (v) { setTextSize(v); applyTextSize(v); } });
+    api.getSettings("skillsmp_api_key").then((v) => { if (v) setSkillsmpApiKey(v); });
     api.getCentralRepoPath().then(setCentralRepoPath).catch(() => {});
 
     (async () => {
@@ -144,6 +151,23 @@ export function Settings() {
     api.setSettings("language", lng);
   };
 
+  const textSizeZoomMap: Record<string, string> = {
+    small: "0.9",
+    default: "1",
+    large: "1.1",
+    xlarge: "1.2",
+  };
+
+  const applyTextSize = (size: string) => {
+    document.documentElement.style.zoom = textSizeZoomMap[size] || "1";
+  };
+
+  const handleTextSizeChange = (size: string) => {
+    setTextSize(size);
+    applyTextSize(size);
+    api.setSettings("text_size", size);
+  };
+
   const handleOpenRepoInFinder = async () => {
     try {
       setOpeningRepo(true);
@@ -204,6 +228,18 @@ export function Settings() {
       }
     } finally {
       setInstalling(false);
+    }
+  };
+
+  const handleSaveSkillsmpApiKey = async () => {
+    setSkillsmpSaving(true);
+    try {
+      await api.setSettings("skillsmp_api_key", skillsmpApiKey.trim());
+      toast.success(t("common.success"));
+    } catch {
+      toast.error(t("common.error"));
+    } finally {
+      setSkillsmpSaving(false);
     }
   };
 
@@ -428,6 +464,37 @@ export function Settings() {
               </div>
             </div>
 
+            {/* Text size */}
+            <div className="px-4 py-3 flex items-center justify-between gap-4">
+              <div>
+                <h3 className="text-[13px] text-secondary font-medium mb-0.5">{t("settings.textSize")}</h3>
+                <p className="text-[13px] text-muted">{t("settings.textSizeDesc")}</p>
+              </div>
+              <div className="flex bg-background border border-border-subtle rounded-[4px] p-px shrink-0">
+                {([
+                  { value: "small", label: t("settings.textSizeSmall") },
+                  { value: "default", label: t("settings.textSizeDefault") },
+                  { value: "large", label: t("settings.textSizeLarge") },
+                  { value: "xlarge", label: t("settings.textSizeXLarge") },
+                ] as const).map((opt) => (
+                  <button
+                    key={opt.value}
+                    onClick={() => handleTextSizeChange(opt.value)}
+                    className={cn(
+                      segmentedButtonClass,
+                      textSize === opt.value ? "bg-surface-active text-secondary" : "text-muted hover:text-tertiary"
+                    )}
+                  >
+                    {opt.value === "small" && <Type className="w-2.5 h-2.5" />}
+                    {opt.value === "default" && <Type className="w-3 h-3" />}
+                    {opt.value === "large" && <Type className="w-3.5 h-3.5" />}
+                    {opt.value === "xlarge" && <Type className="w-4 h-4" />}
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
             {/* Default scenario */}
             <div className="px-4 py-3 flex items-center justify-between gap-4">
               <div>
@@ -459,6 +526,7 @@ export function Settings() {
                   className={fieldClass}
                 >
                   <option value="zh">简体中文 (zh-CN)</option>
+                  <option value="zh-TW">繁體中文 (zh-TW)</option>
                   <option value="en">English (en-US)</option>
                 </select>
               </div>
@@ -547,6 +615,50 @@ export function Settings() {
                     <Loader2 className="w-3 h-3 animate-spin" />
                   ) : (
                     <LinkIcon className="w-3 h-3" />
+                  )}
+                  {t("common.save")}
+                </button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* SkillsMP API Key */}
+        <section>
+          <h2 className="app-section-title mb-3">
+            {t("settings.skillsmpTitle", { defaultValue: "SkillsMP AI Search" })}
+          </h2>
+          <div className="app-panel overflow-hidden divide-y divide-border-subtle">
+            <div className="px-4 py-3">
+              <h3 className="text-[13px] text-secondary font-medium mb-0.5">{t("settings.skillsmpApiKey", { defaultValue: "API Key" })}</h3>
+              <p className="text-[13px] text-muted mb-2">
+                {t("settings.skillsmpDesc", { defaultValue: "Enter your SkillsMP API key to enable AI-powered skill search." })}{" "}
+                <button
+                  type="button"
+                  onClick={() => openUrl("https://skillsmp.com/docs/api")}
+                  className="inline-flex items-center gap-0.5 text-accent-light hover:underline"
+                >
+                  {t("settings.skillsmpGetKey", { defaultValue: "Get your API key" })}
+                  <ExternalLink className="h-3 w-3" />
+                </button>
+              </p>
+              <div className="flex items-center gap-2">
+                <input
+                  type="password"
+                  value={skillsmpApiKey}
+                  onChange={(e) => setSkillsmpApiKey(e.target.value)}
+                  placeholder="sk_live_..."
+                  className={`${fieldClass} flex-1 font-mono`}
+                />
+                <button
+                  onClick={handleSaveSkillsmpApiKey}
+                  disabled={skillsmpSaving}
+                  className={`${actionButtonClass} bg-surface-hover hover:bg-surface-active text-tertiary border-border`}
+                >
+                  {skillsmpSaving ? (
+                    <Loader2 className="w-3 h-3 animate-spin" />
+                  ) : (
+                    <Key className="w-3 h-3" />
                   )}
                   {t("common.save")}
                 </button>

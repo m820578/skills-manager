@@ -74,9 +74,9 @@ export function SkillDetailPanel({
     <div className="fixed inset-y-0 right-0 left-[220px] z-50 flex">
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
       <div className="relative flex h-full min-h-0 w-full flex-col border-l border-border-subtle bg-bg-secondary shadow-2xl animate-in slide-in-from-right duration-200">
-        <div className="border-b border-border-subtle px-6 pt-6 pb-5">
+        <div className="border-b border-border-subtle px-6 pt-6 pb-5 animate-in fade-in duration-300">
           <div className="mb-3 flex items-start justify-between gap-4">
-            <h2 className="min-w-0 text-[30px] font-semibold leading-tight tracking-tight text-primary">
+            <h2 className="min-w-0 text-[30px] font-semibold leading-tight tracking-tight text-primary animate-in slide-in-from-left-2 duration-300">
               <span className="block truncate">{skill.name}</span>
             </h2>
             <button

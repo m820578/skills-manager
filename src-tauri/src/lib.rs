@@ -425,6 +425,7 @@ pub fn run() {
             // Browse
             commands::browse::fetch_leaderboard,
             commands::browse::search_skillssh,
+            commands::browse::search_skillsmp,
             // Settings
             commands::settings::get_settings,
             commands::settings::set_settings,
@@ -469,6 +470,8 @@ pub fn run() {
             commands::scenarios::remove_skill_from_scenario,
             commands::scenarios::reorder_scenarios,
             commands::projects::reorder_projects,
+            commands::scenarios::get_scenario_skill_order,
+            commands::scenarios::reorder_scenario_skills,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
