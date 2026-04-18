@@ -31,6 +31,7 @@ import { useMultiSelect } from "../hooks/useMultiSelect";
 import { ConfirmDialog } from "../components/ConfirmDialog";
 import { SkillDetailPanel } from "../components/SkillDetailPanel";
 import { MultiSelectToolbar } from "../components/MultiSelectToolbar";
+import { BatchTagDialog } from "../components/BatchTagDialog";
 import { SyncDots } from "../components/SyncDots";
 import * as api from "../lib/tauri";
 import type {
@@ -133,6 +134,7 @@ export function MySkills() {
   const [search, setSearch] = useState("");
   const [deleteTarget, setDeleteTarget] = useState<ManagedSkill | null>(null);
   const [batchDeleteConfirm, setBatchDeleteConfirm] = useState(false);
+  const [batchTagDialogOpen, setBatchTagDialogOpen] = useState(false);
   const [checkingAll, setCheckingAll] = useState(false);
   const [checkingSkillId, setCheckingSkillId] = useState<string | null>(null);
   const [updatingSkillId, setUpdatingSkillId] = useState<string | null>(null);
@@ -469,6 +471,38 @@ export function MySkills() {
     exitMultiSelect();
     setBatchDeleteConfirm(false);
     await Promise.all([refreshManagedSkills(), refreshScenarios()]);
+  };
+
+  const handleBatchEditTags = async (adds: string[], removes: string[]) => {
+    const selectedSkillsList = skills.filter((s) => selectedIds.has(s.id));
+    let updated = 0;
+    let failed = 0;
+    for (const skill of selectedSkillsList) {
+      const removeSet = new Set(removes);
+      const remaining = skill.tags.filter((tag) => !removeSet.has(tag));
+      const merged = [...remaining];
+      for (const tag of adds) {
+        if (!merged.includes(tag)) merged.push(tag);
+      }
+      const changed =
+        merged.length !== skill.tags.length ||
+        merged.some((tag, i) => tag !== skill.tags[i]);
+      if (!changed) continue;
+      try {
+        await api.setSkillTags(skill.id, merged);
+        updated++;
+      } catch {
+        failed++;
+      }
+    }
+    if (updated > 0) {
+      toast.success(t("mySkills.batchTagsUpdated", { count: updated }));
+    }
+    if (failed > 0) {
+      toast.error(t("mySkills.batchTagsFailed", { count: failed }));
+    }
+    await refreshManagedSkills();
+    await refreshAllTags();
   };
 
   const handleBatchToggleScenario = async () => {
@@ -864,6 +898,32 @@ export function MySkills() {
       ? t("mySkills.updateActions.reimport")
       : t("mySkills.updateActions.update");
 
+  const tagColorClasses = [
+    "bg-blue-500/15 text-blue-600 dark:text-blue-400",
+    "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400",
+    "bg-violet-500/15 text-violet-600 dark:text-violet-400",
+    "bg-amber-500/15 text-amber-600 dark:text-amber-400",
+    "bg-rose-500/15 text-rose-600 dark:text-rose-400",
+    "bg-cyan-500/15 text-cyan-600 dark:text-cyan-400",
+    "bg-orange-500/15 text-orange-600 dark:text-orange-400",
+    "bg-pink-500/15 text-pink-600 dark:text-pink-400",
+  ];
+  const tagActiveClasses = [
+    "bg-blue-500 text-white dark:bg-blue-500",
+    "bg-emerald-500 text-white dark:bg-emerald-500",
+    "bg-violet-500 text-white dark:bg-violet-500",
+    "bg-amber-500 text-white dark:bg-amber-500",
+    "bg-rose-500 text-white dark:bg-rose-500",
+    "bg-cyan-500 text-white dark:bg-cyan-500",
+    "bg-orange-500 text-white dark:bg-orange-500",
+    "bg-pink-500 text-white dark:bg-pink-500",
+  ];
+  const getTagColor = (tag: string) => {
+    const idx = allTags.indexOf(tag);
+    const colorIndex = (idx === -1 ? 0 : idx) % tagColorClasses.length;
+    return tagColorClasses[colorIndex];
+  };
+
   const statusBadge = (skill: ManagedSkill) => {
     if (skill.update_status === "update_available") {
       return {
@@ -1045,27 +1105,7 @@ export function MySkills() {
           <>
             <span className="mx-0.5 h-3 w-px bg-border-subtle" />
             {allTags.map((tag, i) => {
-              const colors = [
-                "bg-blue-500/15 text-blue-600 dark:text-blue-400",
-                "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400",
-                "bg-violet-500/15 text-violet-600 dark:text-violet-400",
-                "bg-amber-500/15 text-amber-600 dark:text-amber-400",
-                "bg-rose-500/15 text-rose-600 dark:text-rose-400",
-                "bg-cyan-500/15 text-cyan-600 dark:text-cyan-400",
-                "bg-orange-500/15 text-orange-600 dark:text-orange-400",
-                "bg-pink-500/15 text-pink-600 dark:text-pink-400",
-              ];
-              const activeColors = [
-                "bg-blue-500 text-white dark:bg-blue-500",
-                "bg-emerald-500 text-white dark:bg-emerald-500",
-                "bg-violet-500 text-white dark:bg-violet-500",
-                "bg-amber-500 text-white dark:bg-amber-500",
-                "bg-rose-500 text-white dark:bg-rose-500",
-                "bg-cyan-500 text-white dark:bg-cyan-500",
-                "bg-orange-500 text-white dark:bg-orange-500",
-                "bg-pink-500 text-white dark:bg-pink-500",
-              ];
-              const colorIndex = i % colors.length;
+              const colorIndex = i % tagColorClasses.length;
               const isActive = tagFilters.has(tag);
               return (
                 <button
@@ -1073,7 +1113,7 @@ export function MySkills() {
                   onClick={() => setTagFilters(toggleFilter(tagFilters, tag))}
                   className={cn(
                     "rounded-full px-2.5 py-0.5 text-[12px] font-medium transition-colors",
-                    isActive ? activeColors[colorIndex] : colors[colorIndex]
+                    isActive ? tagActiveClasses[colorIndex] : tagColorClasses[colorIndex]
                   )}
                 >
                   {tag}
@@ -1102,12 +1142,14 @@ export function MySkills() {
             selectAll: t("mySkills.selectAll"),
             deselectAll: t("mySkills.deselectAll"),
             cancel: t("common.cancel"),
+            editTags: t("mySkills.batchEditTags", { count: selectedIds.size }),
           }}
           onUpdate={handleBatchRefresh}
           onDelete={() => setBatchDeleteConfirm(true)}
           onToggle={handleBatchToggleScenario}
           onSelectAll={handleSelectAll}
           onCancel={exitMultiSelect}
+          onEditTags={() => setBatchTagDialogOpen(true)}
         />
       )}
 
@@ -1294,12 +1336,15 @@ export function MySkills() {
                       {skill.tags.map((tag) => (
                         <span
                           key={tag}
-                          className="group/tag inline-flex items-center gap-0.5 rounded-full bg-accent-bg px-2 py-0.5 text-[11px] font-medium text-accent-light"
+                          className={cn(
+                            "group/tag inline-flex items-center gap-0.5 rounded-full px-2 py-0.5 text-[11px] font-medium",
+                            getTagColor(tag)
+                          )}
                         >
                           {tag}
                           <button
                             onClick={(e) => { e.stopPropagation(); handleRemoveTag(skill, tag); }}
-                            className="hidden group-hover/tag:inline-flex rounded-full p-0 text-accent-light/60 hover:text-accent-light"
+                            className="hidden group-hover/tag:inline-flex rounded-full p-0 opacity-60 hover:opacity-100"
                           >
                             <X className="h-2.5 w-2.5" />
                           </button>
@@ -1429,7 +1474,10 @@ export function MySkills() {
                   {skill.tags.map((tag) => (
                     <span
                       key={tag}
-                      className="inline-flex items-center rounded-full bg-accent-bg px-1.5 py-0.5 text-[11px] font-medium text-accent-light"
+                      className={cn(
+                        "inline-flex items-center rounded-full px-1.5 py-0.5 text-[11px] font-medium",
+                        getTagColor(tag)
+                      )}
                     >
                       {tag}
                     </span>
@@ -1546,6 +1594,13 @@ export function MySkills() {
         message={t("mySkills.batchDeleteConfirm", { count: selectedIds.size })}
         onClose={() => setBatchDeleteConfirm(false)}
         onConfirm={handleBatchDelete}
+      />
+      <BatchTagDialog
+        open={batchTagDialogOpen}
+        skills={skills.filter((s) => selectedIds.has(s.id))}
+        allTags={allTags}
+        onClose={() => setBatchTagDialogOpen(false)}
+        onApply={handleBatchEditTags}
       />
       <ConfirmDialog
         open={restoreVersionTag !== null}

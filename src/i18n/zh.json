@@ -217,7 +217,20 @@
     "batchEnable": "启用 {{count}} 个",
     "batchDisable": "停用 {{count}} 个",
     "batchEnabled": "已启用 {{count}} 个 Skill",
-    "batchDisabled": "已停用 {{count}} 个 Skill"
+    "batchDisabled": "已停用 {{count}} 个 Skill",
+    "batchEditTags": "标签 ({{count}})",
+    "batchTagsUpdated": "已更新 {{count}} 个 Skill 的标签",
+    "batchTagsFailed": "{{count}} 个 Skill 标签更新失败",
+    "batchTagDialog": {
+      "title": "为 {{count}} 个 Skill 编辑标签",
+      "currentTags": "当前标签（点击标记移除）",
+      "toAdd": "添加新标签",
+      "noTags": "选中的 Skill 暂无标签",
+      "apply": "应用",
+      "addButton": "添加",
+      "clickToRemove": "点击标记为移除",
+      "undoRemove": "点击保留此标签"
+    }
   },
   "install": {
     "title": "安装 Skills",

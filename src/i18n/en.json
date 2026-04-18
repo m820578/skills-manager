@@ -217,7 +217,20 @@
     "batchEnable": "Enable {{count}}",
     "batchDisable": "Disable {{count}}",
     "batchEnabled": "{{count}} skills enabled",
-    "batchDisabled": "{{count}} skills disabled"
+    "batchDisabled": "{{count}} skills disabled",
+    "batchEditTags": "Tags ({{count}})",
+    "batchTagsUpdated": "Tags updated for {{count}} skills",
+    "batchTagsFailed": "{{count}} skills failed to update tags",
+    "batchTagDialog": {
+      "title": "Edit tags for {{count}} skills",
+      "currentTags": "Current tags (click to remove)",
+      "toAdd": "Add new tags",
+      "noTags": "No tags on selected skills",
+      "apply": "Apply",
+      "addButton": "Add",
+      "clickToRemove": "Click to mark for removal",
+      "undoRemove": "Click to keep this tag"
+    }
   },
   "install": {
     "title": "Install Skills",

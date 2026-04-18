@@ -1,4 +1,4 @@
-import { Trash2, CheckCircle2, Circle, RotateCcw } from "lucide-react";
+import { Trash2, CheckCircle2, Circle, RotateCcw, Tag } from "lucide-react";
 import { cn } from "../utils";
 
 interface MultiSelectToolbarLabels {
@@ -11,6 +11,7 @@ interface MultiSelectToolbarLabels {
   selectAll: string;
   deselectAll: string;
   cancel: string;
+  editTags?: string;
 }
 
 interface MultiSelectToolbarProps {
@@ -26,6 +27,7 @@ interface MultiSelectToolbarProps {
   onToggle: () => void;
   onSelectAll: () => void;
   onCancel: () => void;
+  onEditTags?: () => void;
 }
 
 export function MultiSelectToolbar({
@@ -41,6 +43,7 @@ export function MultiSelectToolbar({
   onToggle,
   onSelectAll,
   onCancel,
+  onEditTags,
 }: MultiSelectToolbarProps) {
   return (
     <div className="flex items-center gap-2 px-1 py-1.5">
@@ -57,6 +60,15 @@ export function MultiSelectToolbar({
             >
               <RotateCcw className={cn("h-3.5 w-3.5", updating && "animate-spin")} />
               {labels.update}
+            </button>
+          )}
+          {onEditTags && labels.editTags && (
+            <button
+              onClick={onEditTags}
+              className="inline-flex items-center gap-1.5 rounded-md bg-violet-600/90 px-2.5 py-1 text-[13px] font-medium text-white hover:bg-violet-500 transition-colors"
+            >
+              <Tag className="h-3.5 w-3.5" />
+              {labels.editTags}
             </button>
           )}
           <button
