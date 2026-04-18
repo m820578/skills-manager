@@ -168,9 +168,19 @@ pub fn scan_local_skills_with_adapters(
         let primary_scan_dir = adapter.skills_dir();
         if primary_scan_dir.exists() {
             if adapter.recursive_scan {
-                scan_recursive_dir(&adapter.key, &primary_scan_dir, managed_paths, &mut discovered);
+                scan_recursive_dir(
+                    &adapter.key,
+                    &primary_scan_dir,
+                    managed_paths,
+                    &mut discovered,
+                );
             } else {
-                scan_flat_dir(&adapter.key, &primary_scan_dir, managed_paths, &mut discovered);
+                scan_flat_dir(
+                    &adapter.key,
+                    &primary_scan_dir,
+                    managed_paths,
+                    &mut discovered,
+                );
             }
         }
 
@@ -200,15 +210,13 @@ pub fn group_discovered(records: &[DiscoveredSkillRecord]) -> Vec<DiscoveredGrou
         } else {
             format!("path:{name}:{}", rec.found_path)
         };
-        let entry = groups
-            .entry(group_key)
-            .or_insert_with(|| DiscoveredGroup {
-                name,
-                fingerprint: rec.fingerprint.clone(),
-                locations: Vec::new(),
-                imported: false,
-                found_at: rec.found_at,
-            });
+        let entry = groups.entry(group_key).or_insert_with(|| DiscoveredGroup {
+            name,
+            fingerprint: rec.fingerprint.clone(),
+            locations: Vec::new(),
+            imported: false,
+            found_at: rec.found_at,
+        });
 
         if rec.imported_skill_id.is_some() {
             entry.imported = true;
@@ -314,7 +322,11 @@ mod tests {
         let tmp = tempdir().unwrap();
         write_skill(&tmp.path().join("category/real-skill"));
         // Self-referential loop: `category/loop -> category`
-        symlink(tmp.path().join("category"), tmp.path().join("category/loop")).unwrap();
+        symlink(
+            tmp.path().join("category"),
+            tmp.path().join("category/loop"),
+        )
+        .unwrap();
 
         let results = run(tmp.path());
         assert_eq!(results.len(), 1);
@@ -340,7 +352,10 @@ mod tests {
 
         let plan = scan_local_skills_with_adapters(&[], &[adapter]).unwrap();
         assert_eq!(plan.skills_found, 1);
-        assert_eq!(plan.discovered[0].found_path, tmp.path().join("real-skill").to_string_lossy());
+        assert_eq!(
+            plan.discovered[0].found_path,
+            tmp.path().join("real-skill").to_string_lossy()
+        );
     }
 
     #[test]

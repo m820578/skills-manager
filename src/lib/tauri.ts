@@ -262,6 +262,15 @@ export interface UpdateSkillResult {
 export const updateSkill = (skillId: string) =>
   invoke<UpdateSkillResult>("update_skill", { skillId });
 
+export interface BatchUpdateSkillsResult {
+  refreshed: number;
+  unchanged: number;
+  failed: string[];
+}
+
+export const batchUpdateSkills = (skillIds: string[]) =>
+  invoke<BatchUpdateSkillsResult>("batch_update_skills", { skillIds });
+
 export const reimportLocalSkill = (skillId: string) =>
   invoke<ManagedSkill>("reimport_local_skill", { skillId });
 

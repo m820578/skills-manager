@@ -3,9 +3,7 @@ use std::path::PathBuf;
 use std::sync::Arc;
 use tauri::State;
 
-use crate::core::{
-    error::AppError, installer, scanner, skill_store::SkillStore, tool_adapters,
-};
+use crate::core::{error::AppError, installer, scanner, skill_store::SkillStore, tool_adapters};
 
 fn match_imported_skill_id(
     rec: &crate::core::skill_store::DiscoveredSkillRecord,

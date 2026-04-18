@@ -135,7 +135,8 @@ fn resolve_agent_skills_roots(
         .into_iter()
         .find(|adapter| adapter.key == agent)?;
     let skills_root = Path::new(&rec.path).join(&adapter.relative_skills_dir);
-    let disabled_root = Path::new(&rec.path).join(format!("{}-disabled", &adapter.relative_skills_dir));
+    let disabled_root =
+        Path::new(&rec.path).join(format!("{}-disabled", &adapter.relative_skills_dir));
     Some((skills_root, Some(disabled_root)))
 }
 
@@ -168,10 +169,7 @@ fn project_agent_targets_for_record(
             let adapter = tool_adapters::find_adapter_with_store(store, &config.key);
             ProjectAgentTargetDto {
                 enabled: !disabled_tools.contains(&config.key),
-                installed: adapter
-                    .as_ref()
-                    .map(|a| a.is_installed())
-                    .unwrap_or(false),
+                installed: adapter.as_ref().map(|a| a.is_installed()).unwrap_or(false),
                 is_custom: adapter.as_ref().map(|a| a.is_custom).unwrap_or(false),
                 key: config.key,
                 display_name: config.display_name,
@@ -612,9 +610,8 @@ pub async fn get_project_skill_document(
             .map_err(AppError::db)?
             .ok_or_else(|| AppError::not_found("Workspace not found"))?;
 
-        let (skills_root, disabled_root) =
-            resolve_agent_skills_roots(&store, &record, &agent)
-                .ok_or_else(|| AppError::not_found(format!("Unknown workspace agent: {}", agent)))?;
+        let (skills_root, disabled_root) = resolve_agent_skills_roots(&store, &record, &agent)
+            .ok_or_else(|| AppError::not_found(format!("Unknown workspace agent: {}", agent)))?;
         let disabled_root_copy = disabled_root.clone();
         let skill_dir = skills_root.join(&skill_relative_path);
         let skill_dir = if skill_dir.is_dir() {
@@ -824,15 +821,13 @@ pub async fn export_skill_to_project(
         ensure_safe_skill_relative_path(&dir_name)?;
 
         let source = PathBuf::from(&skill.central_path);
-        let agent_keys = agents
-            .filter(|items| !items.is_empty())
-            .unwrap_or_else(|| {
-                if project.workspace_type == "linked" {
-                    vec![linked_workspace_agent_key(&project)]
-                } else {
-                    vec!["claude_code".to_string()]
-                }
-            });
+        let agent_keys = agents.filter(|items| !items.is_empty()).unwrap_or_else(|| {
+            if project.workspace_type == "linked" {
+                vec![linked_workspace_agent_key(&project)]
+            } else {
+                vec!["claude_code".to_string()]
+            }
+        });
 
         for agent_key in &agent_keys {
             let (skills_root, disabled_root) =
@@ -898,9 +893,8 @@ pub async fn update_project_skill_from_center(
         let managed = find_best_center_match(skill, &all_managed)
             .ok_or_else(|| AppError::not_found("No matching skill in center"))?;
 
-        let (skills_root, disabled_root) =
-            resolve_agent_skills_roots(&store, &record, &agent)
-                .ok_or_else(|| AppError::not_found(format!("Unknown agent: {}", agent)))?;
+        let (skills_root, disabled_root) = resolve_agent_skills_roots(&store, &record, &agent)
+            .ok_or_else(|| AppError::not_found(format!("Unknown agent: {}", agent)))?;
         let target_path = PathBuf::from(&skill.path);
         if target_path.starts_with(&skills_root) {
             ensure_dir_within_root(&target_path, &skills_root)?;
@@ -940,11 +934,11 @@ pub async fn toggle_project_skill(
             .map_err(AppError::db)?
             .ok_or_else(|| AppError::not_found("Workspace not found"))?;
 
-        let (skills_dir, disabled_dir) =
-            resolve_agent_skills_roots(&store, &record, &agent)
-                .ok_or_else(|| AppError::not_found(format!("Unknown agent: {}", agent)))?;
-        let disabled_dir = disabled_dir
-            .ok_or_else(|| AppError::invalid_input("This workspace does not support disabling skills"))?;
+        let (skills_dir, disabled_dir) = resolve_agent_skills_roots(&store, &record, &agent)
+            .ok_or_else(|| AppError::not_found(format!("Unknown agent: {}", agent)))?;
+        let disabled_dir = disabled_dir.ok_or_else(|| {
+            AppError::invalid_input("This workspace does not support disabling skills")
+        })?;
 
         if enabled {
             let from = disabled_dir.join(&skill_relative_path);
@@ -1005,16 +999,20 @@ pub async fn delete_project_skill(
             .map_err(AppError::db)?
             .ok_or_else(|| AppError::not_found("Workspace not found"))?;
 
-        let (skills_root, disabled_root) =
-            resolve_agent_skills_roots(&store, &record, &agent)
-                .ok_or_else(|| AppError::not_found(format!("Unknown agent: {}", agent)))?;
+        let (skills_root, disabled_root) = resolve_agent_skills_roots(&store, &record, &agent)
+            .ok_or_else(|| AppError::not_found(format!("Unknown agent: {}", agent)))?;
         let skills_dir = skills_root.join(&skill_relative_path);
-        let disabled_dir = disabled_root.as_ref().map(|root| root.join(&skill_relative_path));
+        let disabled_dir = disabled_root
+            .as_ref()
+            .map(|root| root.join(&skill_relative_path));
 
         let (target, target_root) = if skills_dir.is_dir() {
             (skills_dir, skills_root)
         } else if let Some(disabled_dir) = disabled_dir.filter(|path| path.is_dir()) {
-            (disabled_dir, disabled_root.expect("present when disabled_dir exists"))
+            (
+                disabled_dir,
+                disabled_root.expect("present when disabled_dir exists"),
+            )
         } else {
             return Err(AppError::not_found("Skill directory not found"));
         };

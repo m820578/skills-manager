@@ -135,6 +135,7 @@ export function MySkills() {
   const [checkingAll, setCheckingAll] = useState(false);
   const [checkingSkillId, setCheckingSkillId] = useState<string | null>(null);
   const [updatingSkillId, setUpdatingSkillId] = useState<string | null>(null);
+  const [batchUpdating, setBatchUpdating] = useState(false);
   const [toolToggles, setToolToggles] = useState<SkillToolToggle[] | null>(null);
   const [togglingToolKey, setTogglingToolKey] = useState<string | null>(null);
   const [gitStatus, setGitStatus] = useState<GitBackupStatus | null>(null);
@@ -501,6 +502,56 @@ export function MySkills() {
     await Promise.all([refreshManagedSkills(), refreshScenarios()]);
   };
 
+  const handleBatchRefresh = async () => {
+    const refreshableSkills = skills.filter((skill) => selectedIds.has(skill.id) && canRefresh(skill));
+    if (refreshableSkills.length === 0) return;
+
+    setBatchUpdating(true);
+    try {
+      const result = await api.batchUpdateSkills(refreshableSkills.map((skill) => skill.id));
+      if (result.refreshed > 0) {
+        toast.success(t("mySkills.batchUpdated", { count: result.refreshed }));
+      }
+      if (result.unchanged > 0) {
+        toast.info(t("mySkills.batchAlreadyUpToDate", { count: result.unchanged }));
+      }
+      if (result.failed.length > 0) {
+        toast.error(t("mySkills.batchUpdateFailed", { count: result.failed.length }));
+      }
+    } catch (error: unknown) {
+      toast.error(getErrorMessage(error, t("common.error")));
+    } finally {
+      await refreshManagedSkills();
+      setBatchUpdating(false);
+    }
+  };
+
+  const handleUpdateAvailableSkills = async () => {
+    const updatableSkills = skills.filter(
+      (skill) => skill.update_status === "update_available" && canRefresh(skill)
+    );
+    if (updatableSkills.length === 0) return;
+
+    setBatchUpdating(true);
+    try {
+      const result = await api.batchUpdateSkills(updatableSkills.map((skill) => skill.id));
+      if (result.refreshed > 0) {
+        toast.success(t("mySkills.batchUpdated", { count: result.refreshed }));
+      }
+      if (result.unchanged > 0) {
+        toast.info(t("mySkills.batchAlreadyUpToDate", { count: result.unchanged }));
+      }
+      if (result.failed.length > 0) {
+        toast.error(t("mySkills.batchUpdateFailed", { count: result.failed.length }));
+      }
+    } catch (error: unknown) {
+      toast.error(getErrorMessage(error, t("common.error")));
+    } finally {
+      await refreshManagedSkills();
+      setBatchUpdating(false);
+    }
+  };
+
   const handleToggleScenario = async (skill: ManagedSkill) => {
     if (!activeScenario) return;
     const enabledInScenario = skill.scenario_ids.includes(activeScenario.id);
@@ -769,6 +820,19 @@ export function MySkills() {
     skill.source_type === "skillssh" ||
     ((skill.source_type === "local" || skill.source_type === "import") && !!skill.source_ref);
 
+  const anyRefreshableSelected = useMemo(
+    () => skills.some((skill) => selectedIds.has(skill.id) && canRefresh(skill)),
+    [skills, selectedIds]
+  );
+  const availableUpdateCount = useMemo(
+    () => skills.filter((skill) => skill.update_status === "update_available" && canRefresh(skill)).length,
+    [skills]
+  );
+  const refreshableSelectedCount = useMemo(
+    () => skills.filter((skill) => selectedIds.has(skill.id) && canRefresh(skill)).length,
+    [skills, selectedIds]
+  );
+
   const sourceTypeLabel = (skill: ManagedSkill) =>
     skill.source_type === "skillssh" ? "skills.sh" : skill.source_type;
 
@@ -923,6 +987,14 @@ export function MySkills() {
             {t("mySkills.updateActions.checkAll")}
           </button>
           <button
+            onClick={handleUpdateAvailableSkills}
+            disabled={batchUpdating || availableUpdateCount === 0}
+            className="mr-2 inline-flex items-center gap-1 rounded-md px-3 py-2 text-[13px] font-medium text-accent-light transition-colors hover:bg-accent-bg disabled:opacity-50"
+          >
+            <RotateCcw className={cn("h-3.5 w-3.5", batchUpdating && "animate-spin")} />
+            {t("mySkills.updateActions.updateAvailable", { count: availableUpdateCount })}
+          </button>
+          <button
             onClick={() => setViewMode("grid")}
             className={cn(
               "rounded-md p-2 transition-colors outline-none",
@@ -1016,10 +1088,13 @@ export function MySkills() {
           selectedCount={selectedIds.size}
           isAllSelected={isAllSelected}
           anyDisabled={activeScenario ? anyDisabled : false}
+          anyUpdatable={anyRefreshableSelected}
           showToggle={!!activeScenario}
+          updating={batchUpdating}
           labels={{
             hint: t("mySkills.selectHint"),
             selected: t("mySkills.selectedCount", { count: selectedIds.size }),
+            update: t("mySkills.batchUpdate", { count: refreshableSelectedCount }),
             delete: t("mySkills.deleteSelected", { count: selectedIds.size }),
             enable: t("mySkills.batchEnable", { count: selectedIds.size }),
             disable: t("mySkills.batchDisable", { count: selectedIds.size }),
@@ -1027,6 +1102,7 @@ export function MySkills() {
             deselectAll: t("mySkills.deselectAll"),
             cancel: t("common.cancel"),
           }}
+          onUpdate={handleBatchRefresh}
           onDelete={() => setBatchDeleteConfirm(true)}
           onToggle={handleBatchToggleScenario}
           onSelectAll={handleSelectAll}

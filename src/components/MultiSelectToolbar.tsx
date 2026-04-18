@@ -1,9 +1,10 @@
-import { Trash2, CheckCircle2, Circle } from "lucide-react";
+import { Trash2, CheckCircle2, Circle, RotateCcw } from "lucide-react";
 import { cn } from "../utils";
 
 interface MultiSelectToolbarLabels {
   hint: string;
   selected: string;
+  update?: string;
   delete: string;
   enable: string;
   disable: string;
@@ -16,8 +17,11 @@ interface MultiSelectToolbarProps {
   selectedCount: number;
   isAllSelected: boolean;
   anyDisabled: boolean;
+  anyUpdatable?: boolean;
   showToggle: boolean;
+  updating?: boolean;
   labels: MultiSelectToolbarLabels;
+  onUpdate?: () => void;
   onDelete: () => void;
   onToggle: () => void;
   onSelectAll: () => void;
@@ -28,8 +32,11 @@ export function MultiSelectToolbar({
   selectedCount,
   isAllSelected,
   anyDisabled,
+  anyUpdatable = false,
   showToggle,
+  updating = false,
   labels,
+  onUpdate,
   onDelete,
   onToggle,
   onSelectAll,
@@ -42,6 +49,16 @@ export function MultiSelectToolbar({
       </span>
       {selectedCount > 0 && (
         <>
+          {anyUpdatable && labels.update && onUpdate && (
+            <button
+              onClick={onUpdate}
+              disabled={updating}
+              className="inline-flex items-center gap-1.5 rounded-md bg-accent px-2.5 py-1 text-[13px] font-medium text-white transition-colors hover:opacity-90 disabled:opacity-50"
+            >
+              <RotateCcw className={cn("h-3.5 w-3.5", updating && "animate-spin")} />
+              {labels.update}
+            </button>
+          )}
           <button
             onClick={onDelete}
             className="inline-flex items-center gap-1.5 rounded-md bg-red-600/90 px-2.5 py-1 text-[13px] font-medium text-white hover:bg-red-500 transition-colors"
