@@ -509,6 +509,7 @@ fn get_ahead_behind(dir: &Path) -> Result<(u32, u32)> {
 
 /// Merge backup directory contents into the cloned repo (non-conflicting files only).
 fn merge_backup(backup: &Path, target: &Path) -> Result<()> {
+    crate::core::sync_engine::ensure_dst_not_inside_src(backup, target)?;
     let entries = std::fs::read_dir(backup)?;
     for entry in entries {
         let entry = entry?;

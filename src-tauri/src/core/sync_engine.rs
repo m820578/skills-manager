@@ -1,5 +1,29 @@
 use anyhow::{Context, Result};
-use std::path::Path;
+use std::path::{Path, PathBuf};
+
+/// Refuse to copy when `dst` would land inside `src` (or equal `src`).
+/// Otherwise the recursive copy walks into the freshly-created `dst` and
+/// produces unbounded `<dst>/<dst>/<dst>/...` nesting (issue #61).
+pub(crate) fn ensure_dst_not_inside_src(src: &Path, dst: &Path) -> Result<()> {
+    let Ok(src_canon) = src.canonicalize() else {
+        return Ok(());
+    };
+    let dst_canon: Option<PathBuf> = dst.canonicalize().ok().or_else(|| {
+        let parent = dst.parent()?.canonicalize().ok()?;
+        let name = dst.file_name()?;
+        Some(parent.join(name))
+    });
+    if let Some(dst_canon) = dst_canon {
+        if dst_canon.starts_with(&src_canon) {
+            anyhow::bail!(
+                "Destination {:?} is inside source {:?}; refusing to copy to avoid infinite recursion",
+                dst,
+                src
+            );
+        }
+    }
+    Ok(())
+}
 
 #[derive(Debug, Clone, Copy)]
 pub enum SyncMode {
@@ -32,6 +56,8 @@ pub fn sync_skill(source: &Path, target: &Path, mode: SyncMode) -> Result<SyncMo
         std::fs::create_dir_all(parent)
             .with_context(|| format!("Failed to create parent dir {:?}", parent))?;
     }
+
+    ensure_dst_not_inside_src(source, target)?;
 
     // Remove existing target
     remove_target(target).ok();
@@ -223,6 +249,64 @@ mod tests {
         assert!(!dst.join(".git").exists());
         assert!(dst.join("subdir/file.md").exists());
         assert!(dst.join("root.md").exists());
+    }
+
+    // ── ensure_dst_not_inside_src ──
+
+    #[test]
+    fn ensure_dst_not_inside_src_rejects_subdirectory() {
+        let tmp = tempdir().unwrap();
+        let src = tmp.path().join("skills");
+        fs::create_dir_all(&src).unwrap();
+        let dst = src.join("skills");
+
+        let err = ensure_dst_not_inside_src(&src, &dst).unwrap_err();
+        assert!(err.to_string().contains("infinite recursion"), "{err}");
+    }
+
+    #[test]
+    fn ensure_dst_not_inside_src_rejects_same_path() {
+        let tmp = tempdir().unwrap();
+        let src = tmp.path().join("skills");
+        fs::create_dir_all(&src).unwrap();
+
+        let err = ensure_dst_not_inside_src(&src, &src).unwrap_err();
+        assert!(err.to_string().contains("infinite recursion"), "{err}");
+    }
+
+    #[test]
+    fn ensure_dst_not_inside_src_allows_disjoint_paths() {
+        let tmp = tempdir().unwrap();
+        let src = tmp.path().join("skills");
+        let dst = tmp.path().join("other").join("skills");
+        fs::create_dir_all(&src).unwrap();
+        fs::create_dir_all(dst.parent().unwrap()).unwrap();
+
+        ensure_dst_not_inside_src(&src, &dst).unwrap();
+    }
+
+    #[test]
+    fn ensure_dst_not_inside_src_allows_sibling_dst() {
+        let tmp = tempdir().unwrap();
+        let src = tmp.path().join("skills");
+        let dst = tmp.path().join("skills-disabled");
+        fs::create_dir_all(&src).unwrap();
+
+        ensure_dst_not_inside_src(&src, &dst).unwrap();
+    }
+
+    #[test]
+    fn sync_skill_refuses_target_inside_source() {
+        let tmp = tempdir().unwrap();
+        let src = tmp.path().join("skills");
+        fs::create_dir_all(&src).unwrap();
+        fs::write(src.join("SKILL.md"), "# hello").unwrap();
+        let tgt = src.join("skills");
+
+        let err = sync_skill(&src, &tgt, SyncMode::Copy).unwrap_err();
+        assert!(err.to_string().contains("infinite recursion"), "{err}");
+        // Source must be untouched after the rejection.
+        assert!(src.join("SKILL.md").exists());
     }
 
     // ── remove_target ──

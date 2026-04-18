@@ -161,7 +161,7 @@ pub fn default_tool_adapters() -> Vec<ToolAdapter> {
         ToolAdapter {
             key: "antigravity".into(),
             display_name: "Antigravity".into(),
-            relative_skills_dir: ".gemini/antigravity/global_skills".into(),
+            relative_skills_dir: ".gemini/antigravity/skills".into(),
             relative_detect_dir: ".gemini/antigravity".into(),
             additional_scan_dirs: vec![],
             override_skills_dir: None,
@@ -668,4 +668,19 @@ pub fn enabled_installed_adapters(
         .into_iter()
         .filter(|a| a.is_installed() && !disabled.contains(&a.key))
         .collect()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::default_tool_adapters;
+
+    #[test]
+    fn antigravity_uses_current_default_skills_path() {
+        let adapter = default_tool_adapters()
+            .into_iter()
+            .find(|adapter| adapter.key == "antigravity")
+            .expect("antigravity adapter should exist");
+
+        assert_eq!(adapter.relative_skills_dir, ".gemini/antigravity/skills");
+    }
 }

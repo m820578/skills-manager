@@ -5,6 +5,7 @@ use walkdir::WalkDir;
 use super::central_repo;
 use super::content_hash;
 use super::skill_metadata::{self, sanitize_skill_name};
+use super::sync_engine;
 
 pub struct InstallResult {
     pub name: String,
@@ -138,6 +139,8 @@ pub fn install_skill_dir_to_destination(
     destination: &Path,
 ) -> Result<InstallResult> {
     let meta = skill_metadata::parse_skill_md(source);
+
+    sync_engine::ensure_dst_not_inside_src(source, destination)?;
 
     if destination.exists() {
         std::fs::remove_dir_all(destination)
@@ -314,6 +317,25 @@ mod tests {
 
         let dest = unique_skill_dest(tmp.path(), "a-b", &source).unwrap();
         assert_eq!(dest, tmp.path().join("a-b-2"));
+    }
+
+    #[test]
+    fn install_skill_dir_refuses_destination_inside_source() {
+        let tmp = tempdir().unwrap();
+        let source = make_skill_dir(tmp.path(), "skills", Some("skills"));
+        std::fs::write(source.join("body.md"), "data").unwrap();
+        let destination = source.join("skills");
+
+        let err = install_skill_dir_to_destination(&source, "skills", &destination)
+            .err()
+            .expect("expected refusal");
+        assert!(
+            err.to_string().contains("infinite recursion"),
+            "unexpected error: {err}"
+        );
+        // The source must not be touched, and no nested copy must exist.
+        assert!(source.join("body.md").exists());
+        assert!(!destination.exists());
     }
 
     #[test]
