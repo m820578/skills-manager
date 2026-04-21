@@ -129,6 +129,11 @@ pub fn resolve_local_skill_name(source: &Path, name: Option<&str>) -> Result<Str
     })
 }
 
+pub fn hash_local_source(source: &Path) -> Result<String> {
+    let prepared = PreparedSource::open(source)?;
+    content_hash::hash_directory(prepared.skill_dir())
+}
+
 pub fn install_from_git_dir(source: &Path, name: Option<&str>) -> Result<InstallResult> {
     install_from_local(source, name)
 }
@@ -262,7 +267,9 @@ fn copy_skill_dir(src: &Path, dst: &Path) -> Result<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::io::Write;
     use tempfile::tempdir;
+    use zip::write::SimpleFileOptions;
 
     fn make_skill_dir(parent: &Path, dir_name: &str, meta_name: Option<&str>) -> PathBuf {
         let dir = parent.join(dir_name);
@@ -348,5 +355,46 @@ mod tests {
 
         let dest = unique_skill_dest(tmp.path(), "legacy", &source).unwrap();
         assert_eq!(dest, tmp.path().join("legacy"));
+    }
+
+    fn write_skill_archive(path: &Path, body: &str) {
+        let file = std::fs::File::create(path).unwrap();
+        let mut zip = zip::ZipWriter::new(file);
+        let options = SimpleFileOptions::default();
+        zip.start_file("demo-skill/SKILL.md", options).unwrap();
+        zip.write_all(b"---\nname: Demo Skill\n---\n").unwrap();
+        zip.start_file("demo-skill/body.md", options).unwrap();
+        zip.write_all(body.as_bytes()).unwrap();
+        zip.finish().unwrap();
+    }
+
+    #[test]
+    fn hash_local_source_matches_extracted_archive_representation() {
+        let tmp = tempdir().unwrap();
+        let archive = tmp.path().join("demo.skill");
+        write_skill_archive(&archive, "same content");
+
+        let extracted = tmp.path().join("extracted");
+        std::fs::create_dir_all(&extracted).unwrap();
+        std::fs::write(extracted.join("SKILL.md"), "---\nname: Demo Skill\n---\n").unwrap();
+        std::fs::write(extracted.join("body.md"), "same content").unwrap();
+
+        let archive_hash = hash_local_source(&archive).unwrap();
+        let dir_hash = content_hash::hash_directory(&extracted).unwrap();
+
+        assert_eq!(archive_hash, dir_hash);
+    }
+
+    #[test]
+    fn hash_local_source_detects_archive_content_changes() {
+        let tmp = tempdir().unwrap();
+        let archive = tmp.path().join("demo.zip");
+        write_skill_archive(&archive, "v1");
+        let first_hash = hash_local_source(&archive).unwrap();
+
+        write_skill_archive(&archive, "v2");
+        let second_hash = hash_local_source(&archive).unwrap();
+
+        assert_ne!(first_hash, second_hash);
     }
 }

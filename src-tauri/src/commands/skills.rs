@@ -1335,16 +1335,31 @@ fn check_skill_update_internal(
             }
         }
         "local" | "import" => {
-            let (status, error) = match skill.source_ref.as_deref() {
-                Some(path) if Path::new(path).exists() => ("local_only", None),
-                Some(_) => (
-                    "source_missing",
-                    Some("Original source path no longer exists"),
-                ),
+            let (status, error): (&str, Option<String>) = match skill.source_ref.as_deref() {
+                Some(path) => {
+                    let source_path = Path::new(path);
+                    if !source_path.exists() {
+                        (
+                            "source_missing",
+                            Some("Original source path no longer exists".to_string()),
+                        )
+                    } else {
+                        match installer::hash_local_source(source_path) {
+                            Ok(live_hash) => match skill.content_hash.as_deref() {
+                                Some(stored) if stored == live_hash.as_str() => {
+                                    ("up_to_date", None)
+                                }
+                                Some(_) => ("update_available", None),
+                                None => ("local_only", None),
+                            },
+                            Err(err) => ("error", Some(err.to_string())),
+                        }
+                    }
+                }
                 None => ("local_only", None),
             };
             store
-                .update_skill_check_state(&skill.id, None, status, error)
+                .update_skill_check_state(&skill.id, None, status, error.as_deref())
                 .map_err(AppError::db)?;
         }
         _ => {
