@@ -42,21 +42,29 @@
 - **Multi-tool sync** — Sync skills to any supported tool via symlink or copy with a single click.
 - **Project Workspaces** — View and manage project-local skill folders for supported agents, compare them with your central library, and sync changes in either direction. Supports nested skill directories and per-agent assignment when exporting.
 - **Linked Workspaces** — Point to any directory as a skills root — useful for skills that live outside the default agent paths. Managed as a standalone workspace without participating in global scenario sync.
-- **Scenarios** — Group skills into scenarios, configure per-scenario agent toggles, drag to reorder enabled skills, and switch between setups instantly.
-- **Batch operations** — Multi-select skills for bulk enable/disable, export, or delete.
-- **Skill tagging and filters** — Tag skills, filter by source or tag, and narrow large libraries quickly.
+- **Scenarios** — Group skills into scenarios, configure per-scenario agent toggles, drag to reorder enabled skills, and switch between setups instantly from the left sidebar.
+- **Batch operations** — Multi-select skills for bulk enable/disable, export, or delete. Project Workspaces also support bulk enable/disable for project-local skills.
+- **Skill tagging and filters** — Tag skills, use tags to group similar skills, and filter by source or tag to narrow large libraries quickly.
 - **Update tracking** — Check for upstream updates on Git-based skills; re-import local ones.
 - **Skill preview and source inspection** — Read `SKILL.md` / `README.md`, inspect source metadata, and compare local content with the upstream version inside the app.
 - **Custom tools** — Add your own agents/tools with custom skills directories, or override the default path for any built-in tool.
 - **Git backup and restore** — Version-control your skill library with Git for backup and multi-machine sync, then restore snapshot versions from Version History when needed.
 - **Flexible app settings** — Configure repo path, sync mode, default scenario, theme, text size, language, tray behavior, proxy, Git remote, and update checks in one place.
 
+## Core Concepts
+
+- **Scenarios are global skill sets** — A scenario is your global set of enabled skills for a tool. For Claude Code, these skills are synced to `~/.claude/skills/`.
+- **Project Workspaces are project-local skill sets** — A project workspace manages the skills that live inside a specific project. For Claude Code, these skills are synced to `<project>/.claude/skills/`.
+- **Switch scenarios from the sidebar** — Click a scenario in the left sidebar to change the active global setup for your current workflow.
+- **Batch control works in both places** — You can bulk enable or disable skills in scenarios and in Project Workspaces.
+- **Tags are for grouping and filtering** — Use tags to label similar skills, then filter by tag to find the subset you want quickly.
+
 ## Quick Start
 
-1. Create or switch to a scenario for the workflow you want to use.
+1. Create a scenario or switch to one from the left sidebar.
 2. Install skills from local folders, Git repositories, archives, or the marketplace. If you have a SkillsMP API key, you can also turn on AI search.
-3. Open **My Skills** to decide which skills belong to the current scenario, tag them, review docs, and manage per-agent sync.
-4. Sync enabled skills to detected tools, or use **Project Workspaces** to compare project-local skills with your central library and move changes both ways.
+3. Open **My Skills** to decide which skills belong to the active scenario, tag them, review docs, and bulk enable or disable them.
+4. Sync enabled scenario skills to detected tools, or use **Project Workspaces** to manage project-local skills in `<project>/.claude/skills/`, including bulk enable/disable and two-way sync with your central library.
 5. Configure agent paths, custom tools, sync mode, default scenario, theme, language, proxy, and Git preferences in **Settings**.
 6. If you want history or multi-machine sync, set a Git remote in **Settings** and run **Start Backup** or **Sync to Git** from **My Skills**.
 
