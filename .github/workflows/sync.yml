@@ -1,0 +1,29 @@
+# .github/workflows/sync.yml
+name: '自动同步上游仓库'
+
+on:
+  schedule:
+    - cron: '0 1 * * *'  # 👈 定时任务，示例为每日凌晨1点运行
+  workflow_dispatch:      # 👈 允许在GitHub网页端手动触发
+
+jobs:
+  sync-upstream:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: 同步上游变更
+        id: sync
+        uses: aormsby/Fork-Sync-With-Upstream-action@v3.4.1  # 👈 使用现成的同步Action
+        with:
+          upstream_sync_repo: 'owner/upstream-repo'         # 👈 必填：上游仓库，例如 'torvalds/linux'
+          upstream_sync_branch: 'main'                      # 👈 必填：上游仓库的分支
+          target_sync_branch: 'main'                        # 👈 必填：你fork仓库的分支
+          target_repo_token: ${{ secrets.GITHUB_TOKEN }}    # 👈 使用自动生成的令牌，安全
+
+      - name: 输出同步结果
+        if: steps.sync.outputs.has_new_commits == 'true'
+        run: echo "✅ 同步完成，已将新提交拉取到您的fork。"
